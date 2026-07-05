@@ -1,0 +1,1 @@
+var e={debug:!1,enableTransliteration:!0,unlimitedRomanNumerals:!1,tts:{defaultModel:{vi:"Ngọc Huyền (mới)",en:"Libritts_r",id:"Indo_goreng"},defaultLangModels:{en:[],id:[]}},asr:{defaultModel:"nghi-stt",fallbackModels:["nghi-stt-v3","Zipformer-30M-RNNT-6000h"],modelStorageKey:"asr-selected-model"}};export{e as default};

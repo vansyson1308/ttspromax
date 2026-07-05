@@ -1,0 +1,56 @@
+node_modules/
+.next/
+.voiceover-venv/
+
+# Local env files (never commit secrets)
+.env
+.env.local
+.env*.local
+.env.production
+.env.production.local
+!.env.example
+
+# Build / cache
+*.log
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+.claude/
+.qwen/
+.playwright-mcp/
+.qc-tools/
+
+# Generated audio/video in public/outputs/
+public/outputs/*
+!public/outputs/.gitkeep
+public/audio/
+voice-inputs/
+voice-outputs/
+
+# Large local model files. Download them on demand.
+public/models/vi/
+*.onnx.data
+*.pth
+*.ckpt
+*.safetensors
+
+# Abandoned model caches (kept on disk for re-use; ignored from VCS).
+# Safe to delete to reclaim ~4 GB.
+/data/
+/onnx-models/
+/pretrained_models/
+/vec-768-layer-12.onnx
+/sample/
+/scripts/
+
+# Historical abandoned voice-clone experiments stay local only.
+/docs/archive/
+/docs/README.md
+/docs/VOXCPM-*.md
+/public/test-voxcpm.html
+
+# Local source documents and generated QC narration.
+/254-ndcp*
+/dev-server*.log

@@ -1,0 +1,8 @@
+* text=auto
+*.wav binary
+*.mp3 binary
+*.mp4 binary
+*.webm binary
+*.onnx binary
+*.bin binary
+*.pdf binary

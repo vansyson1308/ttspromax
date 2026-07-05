@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clone Voice Over"
+  short_description: "Create cloned narration and wire it into Remotion"
+  default_prompt: "Use $clone-voice-over to create authorized cloned narration and add it to my Remotion composition."

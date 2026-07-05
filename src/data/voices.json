@@ -1,0 +1,3089 @@
+[
+  {
+    "id": 1,
+    "voice_id": "Ban Mai",
+    "locale": "vi-VN",
+    "display_name": "Ban Mai",
+    "gender": "female",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 2,
+    "voice_id": "Chiếu Thành",
+    "locale": "vi-VN",
+    "display_name": "Chiếu Thành",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 3,
+    "voice_id": "Duy Onyx (mới)",
+    "locale": "vi-VN",
+    "display_name": "Duy Onyx (mới)",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 4,
+    "voice_id": "Duy Oryx",
+    "locale": "vi-VN",
+    "display_name": "Duy Oryx",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 5,
+    "voice_id": "Lạc Phi",
+    "locale": "vi-VN",
+    "display_name": "Lạc Phi",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 6,
+    "voice_id": "Mai Phương",
+    "locale": "vi-VN",
+    "display_name": "Mai Phương",
+    "gender": "female",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 7,
+    "voice_id": "Minh Khang",
+    "locale": "vi-VN",
+    "display_name": "Minh Khang",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 8,
+    "voice_id": "Minh Quang",
+    "locale": "vi-VN",
+    "display_name": "Minh Quang",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 9,
+    "voice_id": "Mạnh Dũng",
+    "locale": "vi-VN",
+    "display_name": "Mạnh Dũng",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 10,
+    "voice_id": "Mỹ Tâm",
+    "locale": "vi-VN",
+    "display_name": "Mỹ Tâm",
+    "gender": "female",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 11,
+    "voice_id": "Mỹ Tâm Real",
+    "locale": "vi-VN",
+    "display_name": "Mỹ Tâm Real",
+    "gender": "female",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 12,
+    "voice_id": "Ngọc Huyền (mới)",
+    "locale": "vi-VN",
+    "display_name": "Ngọc Huyền (mới)",
+    "gender": "female",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 13,
+    "voice_id": "Ngọc Ngạn",
+    "locale": "vi-VN",
+    "display_name": "Ngọc Ngạn",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 14,
+    "voice_id": "Phương Trang",
+    "locale": "vi-VN",
+    "display_name": "Phương Trang",
+    "gender": "female",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 15,
+    "voice_id": "Thanh Phương Viettel",
+    "locale": "vi-VN",
+    "display_name": "Thanh Phương Viettel",
+    "gender": "female",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 16,
+    "voice_id": "Thiện Tâm",
+    "locale": "vi-VN",
+    "display_name": "Thiện Tâm",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 17,
+    "voice_id": "Trấn Thành",
+    "locale": "vi-VN",
+    "display_name": "Trấn Thành",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 18,
+    "voice_id": "Tài An",
+    "locale": "vi-VN",
+    "display_name": "Tài An",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 19,
+    "voice_id": "Việt Thảo",
+    "locale": "vi-VN",
+    "display_name": "Việt Thảo",
+    "gender": "male",
+    "description": "Vietnamese ONNX (client-side, native quality)",
+    "type": "onnx"
+  },
+  {
+    "id": 20,
+    "voice_id": "af-ZA-AdriNeural",
+    "locale": "af-ZA",
+    "display_name": "Adri",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 21,
+    "voice_id": "af-ZA-WillemNeural",
+    "locale": "af-ZA",
+    "display_name": "Willem",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 22,
+    "voice_id": "sq-AL-AnilaNeural",
+    "locale": "sq-AL",
+    "display_name": "Anila",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 23,
+    "voice_id": "sq-AL-IlirNeural",
+    "locale": "sq-AL",
+    "display_name": "Ilir",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 24,
+    "voice_id": "am-ET-AmehaNeural",
+    "locale": "am-ET",
+    "display_name": "Ameha",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 25,
+    "voice_id": "am-ET-MekdesNeural",
+    "locale": "am-ET",
+    "display_name": "Mekdes",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 26,
+    "voice_id": "ar-DZ-AminaNeural",
+    "locale": "ar-DZ",
+    "display_name": "Amina",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 27,
+    "voice_id": "ar-DZ-IsmaelNeural",
+    "locale": "ar-DZ",
+    "display_name": "Ismael",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 28,
+    "voice_id": "ar-BH-AliNeural",
+    "locale": "ar-BH",
+    "display_name": "Ali",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 29,
+    "voice_id": "ar-BH-LailaNeural",
+    "locale": "ar-BH",
+    "display_name": "Laila",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 30,
+    "voice_id": "ar-EG-SalmaNeural",
+    "locale": "ar-EG",
+    "display_name": "Salma",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 31,
+    "voice_id": "ar-EG-ShakirNeural",
+    "locale": "ar-EG",
+    "display_name": "Shakir",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 32,
+    "voice_id": "ar-IQ-BasselNeural",
+    "locale": "ar-IQ",
+    "display_name": "Bassel",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 33,
+    "voice_id": "ar-IQ-RanaNeural",
+    "locale": "ar-IQ",
+    "display_name": "Rana",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 34,
+    "voice_id": "ar-JO-SanaNeural",
+    "locale": "ar-JO",
+    "display_name": "Sana",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 35,
+    "voice_id": "ar-JO-TaimNeural",
+    "locale": "ar-JO",
+    "display_name": "Taim",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 36,
+    "voice_id": "ar-KW-FahedNeural",
+    "locale": "ar-KW",
+    "display_name": "Fahed",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 37,
+    "voice_id": "ar-KW-NouraNeural",
+    "locale": "ar-KW",
+    "display_name": "Noura",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 38,
+    "voice_id": "ar-LB-LaylaNeural",
+    "locale": "ar-LB",
+    "display_name": "Layla",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 39,
+    "voice_id": "ar-LB-RamiNeural",
+    "locale": "ar-LB",
+    "display_name": "Rami",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 40,
+    "voice_id": "ar-LY-ImanNeural",
+    "locale": "ar-LY",
+    "display_name": "Iman",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 41,
+    "voice_id": "ar-LY-OmarNeural",
+    "locale": "ar-LY",
+    "display_name": "Omar",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 42,
+    "voice_id": "ar-MA-JamalNeural",
+    "locale": "ar-MA",
+    "display_name": "Jamal",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 43,
+    "voice_id": "ar-MA-MounaNeural",
+    "locale": "ar-MA",
+    "display_name": "Mouna",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 44,
+    "voice_id": "ar-OM-AbdullahNeural",
+    "locale": "ar-OM",
+    "display_name": "Abdullah",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 45,
+    "voice_id": "ar-OM-AyshaNeural",
+    "locale": "ar-OM",
+    "display_name": "Aysha",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 46,
+    "voice_id": "ar-QA-AmalNeural",
+    "locale": "ar-QA",
+    "display_name": "Amal",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 47,
+    "voice_id": "ar-QA-MoazNeural",
+    "locale": "ar-QA",
+    "display_name": "Moaz",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 48,
+    "voice_id": "ar-SA-HamedNeural",
+    "locale": "ar-SA",
+    "display_name": "Hamed",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 49,
+    "voice_id": "ar-SA-ZariyahNeural",
+    "locale": "ar-SA",
+    "display_name": "Zariyah",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 50,
+    "voice_id": "ar-SY-AmanyNeural",
+    "locale": "ar-SY",
+    "display_name": "Amany",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 51,
+    "voice_id": "ar-SY-LaithNeural",
+    "locale": "ar-SY",
+    "display_name": "Laith",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 52,
+    "voice_id": "ar-TN-HediNeural",
+    "locale": "ar-TN",
+    "display_name": "Hedi",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 53,
+    "voice_id": "ar-TN-ReemNeural",
+    "locale": "ar-TN",
+    "display_name": "Reem",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 54,
+    "voice_id": "ar-AE-FatimaNeural",
+    "locale": "ar-AE",
+    "display_name": "Fatima",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 55,
+    "voice_id": "ar-AE-HamdanNeural",
+    "locale": "ar-AE",
+    "display_name": "Hamdan",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 56,
+    "voice_id": "ar-YE-MaryamNeural",
+    "locale": "ar-YE",
+    "display_name": "Maryam",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 57,
+    "voice_id": "ar-YE-SalehNeural",
+    "locale": "ar-YE",
+    "display_name": "Saleh",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 58,
+    "voice_id": "az-AZ-BabekNeural",
+    "locale": "az-AZ",
+    "display_name": "Babek",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 59,
+    "voice_id": "az-AZ-BanuNeural",
+    "locale": "az-AZ",
+    "display_name": "Banu",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 60,
+    "voice_id": "bn-BD-NabanitaNeural",
+    "locale": "bn-BD",
+    "display_name": "Nabanita",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 61,
+    "voice_id": "bn-BD-PradeepNeural",
+    "locale": "bn-BD",
+    "display_name": "Pradeep",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 62,
+    "voice_id": "bn-IN-BashkarNeural",
+    "locale": "bn-IN",
+    "display_name": "Bashkar",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 63,
+    "voice_id": "bn-IN-TanishaaNeural",
+    "locale": "bn-IN",
+    "display_name": "Tanishaa",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 64,
+    "voice_id": "bs-BA-VesnaNeural",
+    "locale": "bs-BA",
+    "display_name": "Vesna",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 65,
+    "voice_id": "bs-BA-GoranNeural",
+    "locale": "bs-BA",
+    "display_name": "Goran",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 66,
+    "voice_id": "bg-BG-BorislavNeural",
+    "locale": "bg-BG",
+    "display_name": "Borislav",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 67,
+    "voice_id": "bg-BG-KalinaNeural",
+    "locale": "bg-BG",
+    "display_name": "Kalina",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 68,
+    "voice_id": "my-MM-NilarNeural",
+    "locale": "my-MM",
+    "display_name": "Nilar",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 69,
+    "voice_id": "my-MM-ThihaNeural",
+    "locale": "my-MM",
+    "display_name": "Thiha",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 70,
+    "voice_id": "ca-ES-EnricNeural",
+    "locale": "ca-ES",
+    "display_name": "Enric",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 71,
+    "voice_id": "ca-ES-JoanaNeural",
+    "locale": "ca-ES",
+    "display_name": "Joana",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 72,
+    "voice_id": "zh-HK-HiuGaaiNeural",
+    "locale": "zh-HK",
+    "display_name": "HiuGaai",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 73,
+    "voice_id": "zh-HK-HiuMaanNeural",
+    "locale": "zh-HK",
+    "display_name": "HiuMaan",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 74,
+    "voice_id": "zh-HK-WanLungNeural",
+    "locale": "zh-HK",
+    "display_name": "WanLung",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 75,
+    "voice_id": "zh-CN-XiaoxiaoNeural",
+    "locale": "zh-CN",
+    "display_name": "Xiaoxiao",
+    "gender": "female",
+    "description": "Warm",
+    "type": "country"
+  },
+  {
+    "id": 76,
+    "voice_id": "zh-CN-XiaoyiNeural",
+    "locale": "zh-CN",
+    "display_name": "Xiaoyi",
+    "gender": "female",
+    "description": "Lively",
+    "type": "country"
+  },
+  {
+    "id": 77,
+    "voice_id": "zh-CN-YunjianNeural",
+    "locale": "zh-CN",
+    "display_name": "Yunjian",
+    "gender": "male",
+    "description": "Passion",
+    "type": "country"
+  },
+  {
+    "id": 78,
+    "voice_id": "zh-CN-YunxiNeural",
+    "locale": "zh-CN",
+    "display_name": "Yunxi",
+    "gender": "male",
+    "description": "Lively, Sunshine",
+    "type": "country"
+  },
+  {
+    "id": 79,
+    "voice_id": "zh-CN-YunxiaNeural",
+    "locale": "zh-CN",
+    "display_name": "Yunxia",
+    "gender": "male",
+    "description": "Cute",
+    "type": "country"
+  },
+  {
+    "id": 80,
+    "voice_id": "zh-CN-YunyangNeural",
+    "locale": "zh-CN",
+    "display_name": "Yunyang",
+    "gender": "male",
+    "description": "Professional, Reliable",
+    "type": "country"
+  },
+  {
+    "id": 81,
+    "voice_id": "zh-CN-liaoning-XiaobeiNeural",
+    "locale": "zh-CN-liaoning",
+    "display_name": "Xiaobei",
+    "gender": "female",
+    "description": "Humorous",
+    "type": "country"
+  },
+  {
+    "id": 82,
+    "voice_id": "zh-TW-HsiaoChenNeural",
+    "locale": "zh-TW",
+    "display_name": "HsiaoChen",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 83,
+    "voice_id": "zh-TW-YunJheNeural",
+    "locale": "zh-TW",
+    "display_name": "YunJhe",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 84,
+    "voice_id": "zh-TW-HsiaoYuNeural",
+    "locale": "zh-TW",
+    "display_name": "HsiaoYu",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 85,
+    "voice_id": "zh-CN-shaanxi-XiaoniNeural",
+    "locale": "zh-CN-shaanxi",
+    "display_name": "Xiaoni",
+    "gender": "female",
+    "description": "Bright",
+    "type": "country"
+  },
+  {
+    "id": 86,
+    "voice_id": "hr-HR-GabrijelaNeural",
+    "locale": "hr-HR",
+    "display_name": "Gabrijela",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 87,
+    "voice_id": "hr-HR-SreckoNeural",
+    "locale": "hr-HR",
+    "display_name": "Srecko",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 88,
+    "voice_id": "cs-CZ-AntoninNeural",
+    "locale": "cs-CZ",
+    "display_name": "Antonin",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 89,
+    "voice_id": "cs-CZ-VlastaNeural",
+    "locale": "cs-CZ",
+    "display_name": "Vlasta",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 90,
+    "voice_id": "da-DK-ChristelNeural",
+    "locale": "da-DK",
+    "display_name": "Christel",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 91,
+    "voice_id": "da-DK-JeppeNeural",
+    "locale": "da-DK",
+    "display_name": "Jeppe",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 92,
+    "voice_id": "nl-BE-ArnaudNeural",
+    "locale": "nl-BE",
+    "display_name": "Arnaud",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 93,
+    "voice_id": "nl-BE-DenaNeural",
+    "locale": "nl-BE",
+    "display_name": "Dena",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 94,
+    "voice_id": "nl-NL-ColetteNeural",
+    "locale": "nl-NL",
+    "display_name": "Colette",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 95,
+    "voice_id": "nl-NL-FennaNeural",
+    "locale": "nl-NL",
+    "display_name": "Fenna",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 96,
+    "voice_id": "nl-NL-MaartenNeural",
+    "locale": "nl-NL",
+    "display_name": "Maarten",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 97,
+    "voice_id": "en-AU-WilliamMultilingualNeural",
+    "locale": "en-AU",
+    "display_name": "WilliamMultilingual",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "character"
+  },
+  {
+    "id": 98,
+    "voice_id": "en-AU-NatashaNeural",
+    "locale": "en-AU",
+    "display_name": "Natasha",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 99,
+    "voice_id": "en-CA-ClaraNeural",
+    "locale": "en-CA",
+    "display_name": "Clara",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 100,
+    "voice_id": "en-CA-LiamNeural",
+    "locale": "en-CA",
+    "display_name": "Liam",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 101,
+    "voice_id": "en-HK-YanNeural",
+    "locale": "en-HK",
+    "display_name": "Yan",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 102,
+    "voice_id": "en-HK-SamNeural",
+    "locale": "en-HK",
+    "display_name": "Sam",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 103,
+    "voice_id": "en-IN-NeerjaExpressiveNeural",
+    "locale": "en-IN",
+    "display_name": "Neerja",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 104,
+    "voice_id": "en-IN-NeerjaNeural",
+    "locale": "en-IN",
+    "display_name": "Neerja",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 105,
+    "voice_id": "en-IN-PrabhatNeural",
+    "locale": "en-IN",
+    "display_name": "Prabhat",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 106,
+    "voice_id": "en-IE-ConnorNeural",
+    "locale": "en-IE",
+    "display_name": "Connor",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 107,
+    "voice_id": "en-IE-EmilyNeural",
+    "locale": "en-IE",
+    "display_name": "Emily",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 108,
+    "voice_id": "en-KE-AsiliaNeural",
+    "locale": "en-KE",
+    "display_name": "Asilia",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 109,
+    "voice_id": "en-KE-ChilembaNeural",
+    "locale": "en-KE",
+    "display_name": "Chilemba",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 110,
+    "voice_id": "en-NZ-MitchellNeural",
+    "locale": "en-NZ",
+    "display_name": "Mitchell",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 111,
+    "voice_id": "en-NZ-MollyNeural",
+    "locale": "en-NZ",
+    "display_name": "Molly",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 112,
+    "voice_id": "en-NG-AbeoNeural",
+    "locale": "en-NG",
+    "display_name": "Abeo",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 113,
+    "voice_id": "en-NG-EzinneNeural",
+    "locale": "en-NG",
+    "display_name": "Ezinne",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 114,
+    "voice_id": "en-PH-JamesNeural",
+    "locale": "en-PH",
+    "display_name": "James",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 115,
+    "voice_id": "en-PH-RosaNeural",
+    "locale": "en-PH",
+    "display_name": "Rosa",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 116,
+    "voice_id": "en-US-AvaNeural",
+    "locale": "en-US",
+    "display_name": "Ava",
+    "gender": "female",
+    "description": "Expressive, Caring, Pleasant, Friendly",
+    "type": "country"
+  },
+  {
+    "id": 117,
+    "voice_id": "en-US-AndrewNeural",
+    "locale": "en-US",
+    "display_name": "Andrew",
+    "gender": "male",
+    "description": "Warm, Confident, Authentic, Honest",
+    "type": "country"
+  },
+  {
+    "id": 118,
+    "voice_id": "en-US-EmmaNeural",
+    "locale": "en-US",
+    "display_name": "Emma",
+    "gender": "female",
+    "description": "Cheerful, Clear, Conversational",
+    "type": "country"
+  },
+  {
+    "id": 119,
+    "voice_id": "en-US-BrianNeural",
+    "locale": "en-US",
+    "display_name": "Brian",
+    "gender": "male",
+    "description": "Approachable, Casual, Sincere",
+    "type": "country"
+  },
+  {
+    "id": 120,
+    "voice_id": "en-SG-LunaNeural",
+    "locale": "en-SG",
+    "display_name": "Luna",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 121,
+    "voice_id": "en-SG-WayneNeural",
+    "locale": "en-SG",
+    "display_name": "Wayne",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 122,
+    "voice_id": "en-ZA-LeahNeural",
+    "locale": "en-ZA",
+    "display_name": "Leah",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 123,
+    "voice_id": "en-ZA-LukeNeural",
+    "locale": "en-ZA",
+    "display_name": "Luke",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 124,
+    "voice_id": "en-TZ-ElimuNeural",
+    "locale": "en-TZ",
+    "display_name": "Elimu",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 125,
+    "voice_id": "en-TZ-ImaniNeural",
+    "locale": "en-TZ",
+    "display_name": "Imani",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 126,
+    "voice_id": "en-GB-LibbyNeural",
+    "locale": "en-GB",
+    "display_name": "Libby",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 127,
+    "voice_id": "en-GB-MaisieNeural",
+    "locale": "en-GB",
+    "display_name": "Maisie",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 128,
+    "voice_id": "en-GB-RyanNeural",
+    "locale": "en-GB",
+    "display_name": "Ryan",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 129,
+    "voice_id": "en-GB-SoniaNeural",
+    "locale": "en-GB",
+    "display_name": "Sonia",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 130,
+    "voice_id": "en-GB-ThomasNeural",
+    "locale": "en-GB",
+    "display_name": "Thomas",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 131,
+    "voice_id": "en-US-AnaNeural",
+    "locale": "en-US",
+    "display_name": "Ana",
+    "gender": "female",
+    "description": "Cute",
+    "type": "country"
+  },
+  {
+    "id": 132,
+    "voice_id": "en-US-AndrewMultilingualNeural",
+    "locale": "en-US",
+    "display_name": "AndrewMultilingual",
+    "gender": "male",
+    "description": "Warm, Confident, Authentic, Honest",
+    "type": "character"
+  },
+  {
+    "id": 133,
+    "voice_id": "en-US-AriaNeural",
+    "locale": "en-US",
+    "display_name": "Aria",
+    "gender": "female",
+    "description": "Positive, Confident",
+    "type": "country"
+  },
+  {
+    "id": 134,
+    "voice_id": "en-US-AvaMultilingualNeural",
+    "locale": "en-US",
+    "display_name": "AvaMultilingual",
+    "gender": "female",
+    "description": "Expressive, Caring, Pleasant, Friendly",
+    "type": "character"
+  },
+  {
+    "id": 135,
+    "voice_id": "en-US-BrianMultilingualNeural",
+    "locale": "en-US",
+    "display_name": "BrianMultilingual",
+    "gender": "male",
+    "description": "Approachable, Casual, Sincere",
+    "type": "character"
+  },
+  {
+    "id": 136,
+    "voice_id": "en-US-ChristopherNeural",
+    "locale": "en-US",
+    "display_name": "Christopher",
+    "gender": "male",
+    "description": "Reliable, Authority",
+    "type": "country"
+  },
+  {
+    "id": 137,
+    "voice_id": "en-US-EmmaMultilingualNeural",
+    "locale": "en-US",
+    "display_name": "EmmaMultilingual",
+    "gender": "female",
+    "description": "Cheerful, Clear, Conversational",
+    "type": "character"
+  },
+  {
+    "id": 138,
+    "voice_id": "en-US-EricNeural",
+    "locale": "en-US",
+    "display_name": "Eric",
+    "gender": "male",
+    "description": "Rational",
+    "type": "country"
+  },
+  {
+    "id": 139,
+    "voice_id": "en-US-GuyNeural",
+    "locale": "en-US",
+    "display_name": "Guy",
+    "gender": "male",
+    "description": "Passion",
+    "type": "country"
+  },
+  {
+    "id": 140,
+    "voice_id": "en-US-JennyNeural",
+    "locale": "en-US",
+    "display_name": "Jenny",
+    "gender": "female",
+    "description": "Friendly, Considerate, Comfort",
+    "type": "country"
+  },
+  {
+    "id": 141,
+    "voice_id": "en-US-MichelleNeural",
+    "locale": "en-US",
+    "display_name": "Michelle",
+    "gender": "female",
+    "description": "Friendly, Pleasant",
+    "type": "country"
+  },
+  {
+    "id": 142,
+    "voice_id": "en-US-RogerNeural",
+    "locale": "en-US",
+    "display_name": "Roger",
+    "gender": "male",
+    "description": "Lively",
+    "type": "country"
+  },
+  {
+    "id": 143,
+    "voice_id": "en-US-SteffanNeural",
+    "locale": "en-US",
+    "display_name": "Steffan",
+    "gender": "male",
+    "description": "Rational",
+    "type": "country"
+  },
+  {
+    "id": 144,
+    "voice_id": "et-EE-AnuNeural",
+    "locale": "et-EE",
+    "display_name": "Anu",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 145,
+    "voice_id": "et-EE-KertNeural",
+    "locale": "et-EE",
+    "display_name": "Kert",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 146,
+    "voice_id": "fil-PH-AngeloNeural",
+    "locale": "fil-PH",
+    "display_name": "Angelo",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 147,
+    "voice_id": "fil-PH-BlessicaNeural",
+    "locale": "fil-PH",
+    "display_name": "Blessica",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 148,
+    "voice_id": "fi-FI-HarriNeural",
+    "locale": "fi-FI",
+    "display_name": "Harri",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 149,
+    "voice_id": "fi-FI-NooraNeural",
+    "locale": "fi-FI",
+    "display_name": "Noora",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 150,
+    "voice_id": "fr-BE-CharlineNeural",
+    "locale": "fr-BE",
+    "display_name": "Charline",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 151,
+    "voice_id": "fr-BE-GerardNeural",
+    "locale": "fr-BE",
+    "display_name": "Gerard",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 152,
+    "voice_id": "fr-CA-ThierryNeural",
+    "locale": "fr-CA",
+    "display_name": "Thierry",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 153,
+    "voice_id": "fr-CA-AntoineNeural",
+    "locale": "fr-CA",
+    "display_name": "Antoine",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 154,
+    "voice_id": "fr-CA-JeanNeural",
+    "locale": "fr-CA",
+    "display_name": "Jean",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 155,
+    "voice_id": "fr-CA-SylvieNeural",
+    "locale": "fr-CA",
+    "display_name": "Sylvie",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 156,
+    "voice_id": "fr-FR-VivienneMultilingualNeural",
+    "locale": "fr-FR",
+    "display_name": "VivienneMultilingual",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "character"
+  },
+  {
+    "id": 157,
+    "voice_id": "fr-FR-RemyMultilingualNeural",
+    "locale": "fr-FR",
+    "display_name": "RemyMultilingual",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "character"
+  },
+  {
+    "id": 158,
+    "voice_id": "fr-FR-DeniseNeural",
+    "locale": "fr-FR",
+    "display_name": "Denise",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 159,
+    "voice_id": "fr-FR-EloiseNeural",
+    "locale": "fr-FR",
+    "display_name": "Eloise",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 160,
+    "voice_id": "fr-FR-HenriNeural",
+    "locale": "fr-FR",
+    "display_name": "Henri",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 161,
+    "voice_id": "fr-CH-ArianeNeural",
+    "locale": "fr-CH",
+    "display_name": "Ariane",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 162,
+    "voice_id": "fr-CH-FabriceNeural",
+    "locale": "fr-CH",
+    "display_name": "Fabrice",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 163,
+    "voice_id": "gl-ES-RoiNeural",
+    "locale": "gl-ES",
+    "display_name": "Roi",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 164,
+    "voice_id": "gl-ES-SabelaNeural",
+    "locale": "gl-ES",
+    "display_name": "Sabela",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 165,
+    "voice_id": "ka-GE-EkaNeural",
+    "locale": "ka-GE",
+    "display_name": "Eka",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 166,
+    "voice_id": "ka-GE-GiorgiNeural",
+    "locale": "ka-GE",
+    "display_name": "Giorgi",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 167,
+    "voice_id": "de-AT-IngridNeural",
+    "locale": "de-AT",
+    "display_name": "Ingrid",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 168,
+    "voice_id": "de-AT-JonasNeural",
+    "locale": "de-AT",
+    "display_name": "Jonas",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 169,
+    "voice_id": "de-DE-SeraphinaMultilingualNeural",
+    "locale": "de-DE",
+    "display_name": "SeraphinaMultilingual",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "character"
+  },
+  {
+    "id": 170,
+    "voice_id": "de-DE-FlorianMultilingualNeural",
+    "locale": "de-DE",
+    "display_name": "FlorianMultilingual",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "character"
+  },
+  {
+    "id": 171,
+    "voice_id": "de-DE-AmalaNeural",
+    "locale": "de-DE",
+    "display_name": "Amala",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 172,
+    "voice_id": "de-DE-ConradNeural",
+    "locale": "de-DE",
+    "display_name": "Conrad",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 173,
+    "voice_id": "de-DE-KatjaNeural",
+    "locale": "de-DE",
+    "display_name": "Katja",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 174,
+    "voice_id": "de-DE-KillianNeural",
+    "locale": "de-DE",
+    "display_name": "Killian",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 175,
+    "voice_id": "de-CH-JanNeural",
+    "locale": "de-CH",
+    "display_name": "Jan",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 176,
+    "voice_id": "de-CH-LeniNeural",
+    "locale": "de-CH",
+    "display_name": "Leni",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 177,
+    "voice_id": "el-GR-AthinaNeural",
+    "locale": "el-GR",
+    "display_name": "Athina",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 178,
+    "voice_id": "el-GR-NestorasNeural",
+    "locale": "el-GR",
+    "display_name": "Nestoras",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 179,
+    "voice_id": "gu-IN-DhwaniNeural",
+    "locale": "gu-IN",
+    "display_name": "Dhwani",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 180,
+    "voice_id": "gu-IN-NiranjanNeural",
+    "locale": "gu-IN",
+    "display_name": "Niranjan",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 181,
+    "voice_id": "he-IL-AvriNeural",
+    "locale": "he-IL",
+    "display_name": "Avri",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 182,
+    "voice_id": "he-IL-HilaNeural",
+    "locale": "he-IL",
+    "display_name": "Hila",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 183,
+    "voice_id": "hi-IN-MadhurNeural",
+    "locale": "hi-IN",
+    "display_name": "Madhur",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 184,
+    "voice_id": "hi-IN-SwaraNeural",
+    "locale": "hi-IN",
+    "display_name": "Swara",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 185,
+    "voice_id": "hu-HU-NoemiNeural",
+    "locale": "hu-HU",
+    "display_name": "Noemi",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 186,
+    "voice_id": "hu-HU-TamasNeural",
+    "locale": "hu-HU",
+    "display_name": "Tamas",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 187,
+    "voice_id": "is-IS-GudrunNeural",
+    "locale": "is-IS",
+    "display_name": "Gudrun",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 188,
+    "voice_id": "is-IS-GunnarNeural",
+    "locale": "is-IS",
+    "display_name": "Gunnar",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 189,
+    "voice_id": "id-ID-ArdiNeural",
+    "locale": "id-ID",
+    "display_name": "Ardi",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 190,
+    "voice_id": "id-ID-GadisNeural",
+    "locale": "id-ID",
+    "display_name": "Gadis",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 191,
+    "voice_id": "iu-Latn-CA-SiqiniqNeural",
+    "locale": "iu-Latn-CA",
+    "display_name": "Siqiniq",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 192,
+    "voice_id": "iu-Latn-CA-TaqqiqNeural",
+    "locale": "iu-Latn-CA",
+    "display_name": "Taqqiq",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 193,
+    "voice_id": "iu-Cans-CA-SiqiniqNeural",
+    "locale": "iu-Cans-CA",
+    "display_name": "Siqiniq",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 194,
+    "voice_id": "iu-Cans-CA-TaqqiqNeural",
+    "locale": "iu-Cans-CA",
+    "display_name": "Taqqiq",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 195,
+    "voice_id": "ga-IE-ColmNeural",
+    "locale": "ga-IE",
+    "display_name": "Colm",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 196,
+    "voice_id": "ga-IE-OrlaNeural",
+    "locale": "ga-IE",
+    "display_name": "Orla",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 197,
+    "voice_id": "it-IT-GiuseppeMultilingualNeural",
+    "locale": "it-IT",
+    "display_name": "GiuseppeMultilingual",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "character"
+  },
+  {
+    "id": 198,
+    "voice_id": "it-IT-DiegoNeural",
+    "locale": "it-IT",
+    "display_name": "Diego",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 199,
+    "voice_id": "it-IT-ElsaNeural",
+    "locale": "it-IT",
+    "display_name": "Elsa",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 200,
+    "voice_id": "it-IT-IsabellaNeural",
+    "locale": "it-IT",
+    "display_name": "Isabella",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 201,
+    "voice_id": "ja-JP-KeitaNeural",
+    "locale": "ja-JP",
+    "display_name": "Keita",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 202,
+    "voice_id": "ja-JP-NanamiNeural",
+    "locale": "ja-JP",
+    "display_name": "Nanami",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 203,
+    "voice_id": "jv-ID-DimasNeural",
+    "locale": "jv-ID",
+    "display_name": "Dimas",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 204,
+    "voice_id": "jv-ID-SitiNeural",
+    "locale": "jv-ID",
+    "display_name": "Siti",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 205,
+    "voice_id": "kn-IN-GaganNeural",
+    "locale": "kn-IN",
+    "display_name": "Gagan",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 206,
+    "voice_id": "kn-IN-SapnaNeural",
+    "locale": "kn-IN",
+    "display_name": "Sapna",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 207,
+    "voice_id": "kk-KZ-AigulNeural",
+    "locale": "kk-KZ",
+    "display_name": "Aigul",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 208,
+    "voice_id": "kk-KZ-DauletNeural",
+    "locale": "kk-KZ",
+    "display_name": "Daulet",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 209,
+    "voice_id": "km-KH-PisethNeural",
+    "locale": "km-KH",
+    "display_name": "Piseth",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 210,
+    "voice_id": "km-KH-SreymomNeural",
+    "locale": "km-KH",
+    "display_name": "Sreymom",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 211,
+    "voice_id": "ko-KR-HyunsuMultilingualNeural",
+    "locale": "ko-KR",
+    "display_name": "HyunsuMultilingual",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "character"
+  },
+  {
+    "id": 212,
+    "voice_id": "ko-KR-InJoonNeural",
+    "locale": "ko-KR",
+    "display_name": "InJoon",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 213,
+    "voice_id": "ko-KR-SunHiNeural",
+    "locale": "ko-KR",
+    "display_name": "SunHi",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 214,
+    "voice_id": "lo-LA-ChanthavongNeural",
+    "locale": "lo-LA",
+    "display_name": "Chanthavong",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 215,
+    "voice_id": "lo-LA-KeomanyNeural",
+    "locale": "lo-LA",
+    "display_name": "Keomany",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 216,
+    "voice_id": "lv-LV-EveritaNeural",
+    "locale": "lv-LV",
+    "display_name": "Everita",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 217,
+    "voice_id": "lv-LV-NilsNeural",
+    "locale": "lv-LV",
+    "display_name": "Nils",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 218,
+    "voice_id": "lt-LT-LeonasNeural",
+    "locale": "lt-LT",
+    "display_name": "Leonas",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 219,
+    "voice_id": "lt-LT-OnaNeural",
+    "locale": "lt-LT",
+    "display_name": "Ona",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 220,
+    "voice_id": "mk-MK-AleksandarNeural",
+    "locale": "mk-MK",
+    "display_name": "Aleksandar",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 221,
+    "voice_id": "mk-MK-MarijaNeural",
+    "locale": "mk-MK",
+    "display_name": "Marija",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 222,
+    "voice_id": "ms-MY-OsmanNeural",
+    "locale": "ms-MY",
+    "display_name": "Osman",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 223,
+    "voice_id": "ms-MY-YasminNeural",
+    "locale": "ms-MY",
+    "display_name": "Yasmin",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 224,
+    "voice_id": "ml-IN-MidhunNeural",
+    "locale": "ml-IN",
+    "display_name": "Midhun",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 225,
+    "voice_id": "ml-IN-SobhanaNeural",
+    "locale": "ml-IN",
+    "display_name": "Sobhana",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 226,
+    "voice_id": "mt-MT-GraceNeural",
+    "locale": "mt-MT",
+    "display_name": "Grace",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 227,
+    "voice_id": "mt-MT-JosephNeural",
+    "locale": "mt-MT",
+    "display_name": "Joseph",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 228,
+    "voice_id": "mr-IN-AarohiNeural",
+    "locale": "mr-IN",
+    "display_name": "Aarohi",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 229,
+    "voice_id": "mr-IN-ManoharNeural",
+    "locale": "mr-IN",
+    "display_name": "Manohar",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 230,
+    "voice_id": "mn-MN-BataaNeural",
+    "locale": "mn-MN",
+    "display_name": "Bataa",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 231,
+    "voice_id": "mn-MN-YesuiNeural",
+    "locale": "mn-MN",
+    "display_name": "Yesui",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 232,
+    "voice_id": "ne-NP-HemkalaNeural",
+    "locale": "ne-NP",
+    "display_name": "Hemkala",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 233,
+    "voice_id": "ne-NP-SagarNeural",
+    "locale": "ne-NP",
+    "display_name": "Sagar",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 234,
+    "voice_id": "nb-NO-FinnNeural",
+    "locale": "nb-NO",
+    "display_name": "Finn",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 235,
+    "voice_id": "nb-NO-PernilleNeural",
+    "locale": "nb-NO",
+    "display_name": "Pernille",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 236,
+    "voice_id": "ps-AF-GulNawazNeural",
+    "locale": "ps-AF",
+    "display_name": "GulNawaz",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 237,
+    "voice_id": "ps-AF-LatifaNeural",
+    "locale": "ps-AF",
+    "display_name": "Latifa",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 238,
+    "voice_id": "fa-IR-DilaraNeural",
+    "locale": "fa-IR",
+    "display_name": "Dilara",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 239,
+    "voice_id": "fa-IR-FaridNeural",
+    "locale": "fa-IR",
+    "display_name": "Farid",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 240,
+    "voice_id": "pl-PL-MarekNeural",
+    "locale": "pl-PL",
+    "display_name": "Marek",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 241,
+    "voice_id": "pl-PL-ZofiaNeural",
+    "locale": "pl-PL",
+    "display_name": "Zofia",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 242,
+    "voice_id": "pt-BR-ThalitaMultilingualNeural",
+    "locale": "pt-BR",
+    "display_name": "ThalitaMultilingual",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "character"
+  },
+  {
+    "id": 243,
+    "voice_id": "pt-BR-AntonioNeural",
+    "locale": "pt-BR",
+    "display_name": "Antonio",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 244,
+    "voice_id": "pt-BR-FranciscaNeural",
+    "locale": "pt-BR",
+    "display_name": "Francisca",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 245,
+    "voice_id": "pt-PT-DuarteNeural",
+    "locale": "pt-PT",
+    "display_name": "Duarte",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 246,
+    "voice_id": "pt-PT-RaquelNeural",
+    "locale": "pt-PT",
+    "display_name": "Raquel",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 247,
+    "voice_id": "ro-RO-AlinaNeural",
+    "locale": "ro-RO",
+    "display_name": "Alina",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 248,
+    "voice_id": "ro-RO-EmilNeural",
+    "locale": "ro-RO",
+    "display_name": "Emil",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 249,
+    "voice_id": "ru-RU-DmitryNeural",
+    "locale": "ru-RU",
+    "display_name": "Dmitry",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 250,
+    "voice_id": "ru-RU-SvetlanaNeural",
+    "locale": "ru-RU",
+    "display_name": "Svetlana",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 251,
+    "voice_id": "sr-RS-NicholasNeural",
+    "locale": "sr-RS",
+    "display_name": "Nicholas",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 252,
+    "voice_id": "sr-RS-SophieNeural",
+    "locale": "sr-RS",
+    "display_name": "Sophie",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 253,
+    "voice_id": "si-LK-SameeraNeural",
+    "locale": "si-LK",
+    "display_name": "Sameera",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 254,
+    "voice_id": "si-LK-ThiliniNeural",
+    "locale": "si-LK",
+    "display_name": "Thilini",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 255,
+    "voice_id": "sk-SK-LukasNeural",
+    "locale": "sk-SK",
+    "display_name": "Lukas",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 256,
+    "voice_id": "sk-SK-ViktoriaNeural",
+    "locale": "sk-SK",
+    "display_name": "Viktoria",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 257,
+    "voice_id": "sl-SI-PetraNeural",
+    "locale": "sl-SI",
+    "display_name": "Petra",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 258,
+    "voice_id": "sl-SI-RokNeural",
+    "locale": "sl-SI",
+    "display_name": "Rok",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 259,
+    "voice_id": "so-SO-MuuseNeural",
+    "locale": "so-SO",
+    "display_name": "Muuse",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 260,
+    "voice_id": "so-SO-UbaxNeural",
+    "locale": "so-SO",
+    "display_name": "Ubax",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 261,
+    "voice_id": "es-AR-ElenaNeural",
+    "locale": "es-AR",
+    "display_name": "Elena",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 262,
+    "voice_id": "es-AR-TomasNeural",
+    "locale": "es-AR",
+    "display_name": "Tomas",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 263,
+    "voice_id": "es-BO-MarceloNeural",
+    "locale": "es-BO",
+    "display_name": "Marcelo",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 264,
+    "voice_id": "es-BO-SofiaNeural",
+    "locale": "es-BO",
+    "display_name": "Sofia",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 265,
+    "voice_id": "es-CL-CatalinaNeural",
+    "locale": "es-CL",
+    "display_name": "Catalina",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 266,
+    "voice_id": "es-CL-LorenzoNeural",
+    "locale": "es-CL",
+    "display_name": "Lorenzo",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 267,
+    "voice_id": "es-CO-GonzaloNeural",
+    "locale": "es-CO",
+    "display_name": "Gonzalo",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 268,
+    "voice_id": "es-CO-SalomeNeural",
+    "locale": "es-CO",
+    "display_name": "Salome",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 269,
+    "voice_id": "es-ES-XimenaNeural",
+    "locale": "es-ES",
+    "display_name": "Ximena",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 270,
+    "voice_id": "es-CR-JuanNeural",
+    "locale": "es-CR",
+    "display_name": "Juan",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 271,
+    "voice_id": "es-CR-MariaNeural",
+    "locale": "es-CR",
+    "display_name": "Maria",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 272,
+    "voice_id": "es-CU-BelkysNeural",
+    "locale": "es-CU",
+    "display_name": "Belkys",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 273,
+    "voice_id": "es-CU-ManuelNeural",
+    "locale": "es-CU",
+    "display_name": "Manuel",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 274,
+    "voice_id": "es-DO-EmilioNeural",
+    "locale": "es-DO",
+    "display_name": "Emilio",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 275,
+    "voice_id": "es-DO-RamonaNeural",
+    "locale": "es-DO",
+    "display_name": "Ramona",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 276,
+    "voice_id": "es-EC-AndreaNeural",
+    "locale": "es-EC",
+    "display_name": "Andrea",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 277,
+    "voice_id": "es-EC-LuisNeural",
+    "locale": "es-EC",
+    "display_name": "Luis",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 278,
+    "voice_id": "es-SV-LorenaNeural",
+    "locale": "es-SV",
+    "display_name": "Lorena",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 279,
+    "voice_id": "es-SV-RodrigoNeural",
+    "locale": "es-SV",
+    "display_name": "Rodrigo",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 280,
+    "voice_id": "es-GQ-JavierNeural",
+    "locale": "es-GQ",
+    "display_name": "Javier",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 281,
+    "voice_id": "es-GQ-TeresaNeural",
+    "locale": "es-GQ",
+    "display_name": "Teresa",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 282,
+    "voice_id": "es-GT-AndresNeural",
+    "locale": "es-GT",
+    "display_name": "Andres",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 283,
+    "voice_id": "es-GT-MartaNeural",
+    "locale": "es-GT",
+    "display_name": "Marta",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 284,
+    "voice_id": "es-HN-CarlosNeural",
+    "locale": "es-HN",
+    "display_name": "Carlos",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 285,
+    "voice_id": "es-HN-KarlaNeural",
+    "locale": "es-HN",
+    "display_name": "Karla",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 286,
+    "voice_id": "es-MX-DaliaNeural",
+    "locale": "es-MX",
+    "display_name": "Dalia",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 287,
+    "voice_id": "es-MX-JorgeNeural",
+    "locale": "es-MX",
+    "display_name": "Jorge",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 288,
+    "voice_id": "es-NI-FedericoNeural",
+    "locale": "es-NI",
+    "display_name": "Federico",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 289,
+    "voice_id": "es-NI-YolandaNeural",
+    "locale": "es-NI",
+    "display_name": "Yolanda",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 290,
+    "voice_id": "es-PA-MargaritaNeural",
+    "locale": "es-PA",
+    "display_name": "Margarita",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 291,
+    "voice_id": "es-PA-RobertoNeural",
+    "locale": "es-PA",
+    "display_name": "Roberto",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 292,
+    "voice_id": "es-PY-MarioNeural",
+    "locale": "es-PY",
+    "display_name": "Mario",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 293,
+    "voice_id": "es-PY-TaniaNeural",
+    "locale": "es-PY",
+    "display_name": "Tania",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 294,
+    "voice_id": "es-PE-AlexNeural",
+    "locale": "es-PE",
+    "display_name": "Alex",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 295,
+    "voice_id": "es-PE-CamilaNeural",
+    "locale": "es-PE",
+    "display_name": "Camila",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 296,
+    "voice_id": "es-PR-KarinaNeural",
+    "locale": "es-PR",
+    "display_name": "Karina",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 297,
+    "voice_id": "es-PR-VictorNeural",
+    "locale": "es-PR",
+    "display_name": "Victor",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 298,
+    "voice_id": "es-ES-AlvaroNeural",
+    "locale": "es-ES",
+    "display_name": "Alvaro",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 299,
+    "voice_id": "es-ES-ElviraNeural",
+    "locale": "es-ES",
+    "display_name": "Elvira",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 300,
+    "voice_id": "es-US-AlonsoNeural",
+    "locale": "es-US",
+    "display_name": "Alonso",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 301,
+    "voice_id": "es-US-PalomaNeural",
+    "locale": "es-US",
+    "display_name": "Paloma",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 302,
+    "voice_id": "es-UY-MateoNeural",
+    "locale": "es-UY",
+    "display_name": "Mateo",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 303,
+    "voice_id": "es-UY-ValentinaNeural",
+    "locale": "es-UY",
+    "display_name": "Valentina",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 304,
+    "voice_id": "es-VE-PaolaNeural",
+    "locale": "es-VE",
+    "display_name": "Paola",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 305,
+    "voice_id": "es-VE-SebastianNeural",
+    "locale": "es-VE",
+    "display_name": "Sebastian",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 306,
+    "voice_id": "su-ID-JajangNeural",
+    "locale": "su-ID",
+    "display_name": "Jajang",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 307,
+    "voice_id": "su-ID-TutiNeural",
+    "locale": "su-ID",
+    "display_name": "Tuti",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 308,
+    "voice_id": "sw-KE-RafikiNeural",
+    "locale": "sw-KE",
+    "display_name": "Rafiki",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 309,
+    "voice_id": "sw-KE-ZuriNeural",
+    "locale": "sw-KE",
+    "display_name": "Zuri",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 310,
+    "voice_id": "sw-TZ-DaudiNeural",
+    "locale": "sw-TZ",
+    "display_name": "Daudi",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 311,
+    "voice_id": "sw-TZ-RehemaNeural",
+    "locale": "sw-TZ",
+    "display_name": "Rehema",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 312,
+    "voice_id": "sv-SE-MattiasNeural",
+    "locale": "sv-SE",
+    "display_name": "Mattias",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 313,
+    "voice_id": "sv-SE-SofieNeural",
+    "locale": "sv-SE",
+    "display_name": "Sofie",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 314,
+    "voice_id": "ta-IN-PallaviNeural",
+    "locale": "ta-IN",
+    "display_name": "Pallavi",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 315,
+    "voice_id": "ta-IN-ValluvarNeural",
+    "locale": "ta-IN",
+    "display_name": "Valluvar",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 316,
+    "voice_id": "ta-MY-KaniNeural",
+    "locale": "ta-MY",
+    "display_name": "Kani",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 317,
+    "voice_id": "ta-MY-SuryaNeural",
+    "locale": "ta-MY",
+    "display_name": "Surya",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 318,
+    "voice_id": "ta-SG-AnbuNeural",
+    "locale": "ta-SG",
+    "display_name": "Anbu",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 319,
+    "voice_id": "ta-SG-VenbaNeural",
+    "locale": "ta-SG",
+    "display_name": "Venba",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 320,
+    "voice_id": "ta-LK-KumarNeural",
+    "locale": "ta-LK",
+    "display_name": "Kumar",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 321,
+    "voice_id": "ta-LK-SaranyaNeural",
+    "locale": "ta-LK",
+    "display_name": "Saranya",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 322,
+    "voice_id": "te-IN-MohanNeural",
+    "locale": "te-IN",
+    "display_name": "Mohan",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 323,
+    "voice_id": "te-IN-ShrutiNeural",
+    "locale": "te-IN",
+    "display_name": "Shruti",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 324,
+    "voice_id": "th-TH-NiwatNeural",
+    "locale": "th-TH",
+    "display_name": "Niwat",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 325,
+    "voice_id": "th-TH-PremwadeeNeural",
+    "locale": "th-TH",
+    "display_name": "Premwadee",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 326,
+    "voice_id": "tr-TR-EmelNeural",
+    "locale": "tr-TR",
+    "display_name": "Emel",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 327,
+    "voice_id": "tr-TR-AhmetNeural",
+    "locale": "tr-TR",
+    "display_name": "Ahmet",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 328,
+    "voice_id": "uk-UA-OstapNeural",
+    "locale": "uk-UA",
+    "display_name": "Ostap",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 329,
+    "voice_id": "uk-UA-PolinaNeural",
+    "locale": "uk-UA",
+    "display_name": "Polina",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 330,
+    "voice_id": "ur-IN-GulNeural",
+    "locale": "ur-IN",
+    "display_name": "Gul",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 331,
+    "voice_id": "ur-IN-SalmanNeural",
+    "locale": "ur-IN",
+    "display_name": "Salman",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 332,
+    "voice_id": "ur-PK-AsadNeural",
+    "locale": "ur-PK",
+    "display_name": "Asad",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 333,
+    "voice_id": "ur-PK-UzmaNeural",
+    "locale": "ur-PK",
+    "display_name": "Uzma",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 334,
+    "voice_id": "uz-UZ-MadinaNeural",
+    "locale": "uz-UZ",
+    "display_name": "Madina",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 335,
+    "voice_id": "uz-UZ-SardorNeural",
+    "locale": "uz-UZ",
+    "display_name": "Sardor",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 336,
+    "voice_id": "vi-VN-HoaiMyNeural",
+    "locale": "vi-VN",
+    "display_name": "HoaiMy",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 337,
+    "voice_id": "vi-VN-NamMinhNeural",
+    "locale": "vi-VN",
+    "display_name": "NamMinh",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 338,
+    "voice_id": "cy-GB-AledNeural",
+    "locale": "cy-GB",
+    "display_name": "Aled",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 339,
+    "voice_id": "cy-GB-NiaNeural",
+    "locale": "cy-GB",
+    "display_name": "Nia",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 340,
+    "voice_id": "zu-ZA-ThandoNeural",
+    "locale": "zu-ZA",
+    "display_name": "Thando",
+    "gender": "female",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 341,
+    "voice_id": "zu-ZA-ThembaNeural",
+    "locale": "zu-ZA",
+    "display_name": "Themba",
+    "gender": "male",
+    "description": "Friendly, Positive",
+    "type": "country"
+  },
+  {
+    "id": 342,
+    "voice_id": "pNInz6obpgDQGcFmaJgB",
+    "locale": "en-US",
+    "display_name": "Adam (ElevenLabs)",
+    "gender": "male",
+    "description": "Dominant, Firm - ElevenLabs multilingual via MakeVoice.io",
+    "type": "makevoice"
+  },
+  {
+    "id": 343,
+    "voice_id": "pNInz6obpgDQGcFmaJgB",
+    "locale": "vi-VN",
+    "display_name": "Adam (ElevenLabs)",
+    "gender": "male",
+    "description": "Dominant, Firm - ElevenLabs multilingual (supports Vietnamese)",
+    "type": "makevoice"
+  }
+]

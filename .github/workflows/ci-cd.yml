@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install web dependencies
+        run: npm ci
+
+      - name: Test voice-over CLI
+        run: python .agents/skills/clone-voice-over/scripts/test_voiceover.py
+
+      - name: Check repository hygiene
+        shell: pwsh
+        run: ./tools/check-repository.ps1
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
