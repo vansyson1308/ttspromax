@@ -1,16 +1,31 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, useDeferredValue } from "react";
 import dynamic from "next/dynamic";
 import AvatarToggle from "@/components/avatar/AvatarToggle";
 import PitchControl from "@/components/avatar/PitchControl";
 import type { AvatarHandle } from "@/components/avatar/AvatarContainer";
 import { setPitch as setAudioPitch } from "@/lib/audio-pipeline";
-import { readNdjsonAudioStream } from "@/lib/ndjson-audio-stream";
+import { readNdjsonAudioStream, type NdjsonMessage } from "@/lib/ndjson-audio-stream";
+import { planScript, type ScriptLang } from "@/lib/speech/planner";
+import { applyLexicon, type LexiconEntry } from "@/lib/speech/lexicon";
+import { mapPauseTags } from "@/lib/speech/segmenter";
+import { toSrt, toVtt, type TimedCue } from "@/lib/speech/subtitles";
+import { LEGACY_MAX_CHARS, TTS_MAX_CHARS } from "@/lib/speech/limits";
+import StylePanel, { DEFAULT_SETTINGS, type StudioSettings } from "@/components/studio/StylePanel";
+import LexiconEditor from "@/components/studio/LexiconEditor";
+import ReadingPreview from "@/components/studio/ReadingPreview";
+import Transcript from "@/components/studio/Transcript";
+import { SAMPLE_SCRIPTS } from "@/components/studio/samples";
+import { LOCALE_NAMES, RECOMMENDED_VOICES } from "@/components/studio/locales";
+import { usePersistentState } from "@/components/studio/usePersistentState";
+import { useTr } from "@/components/studio/i18n";
 
 const AvatarContainer = dynamic(() => import("@/components/avatar/AvatarContainer"), { ssr: false });
 
 // ─── Types ──────────────────────────────────────────────────────────────────
+
+type VoiceType = "onnx" | "country" | "character" | "makevoice" | "gemini";
 
 interface VoiceEntry {
   id: number;
@@ -18,194 +33,318 @@ interface VoiceEntry {
   locale: string;
   display_name: string;
   gender: string;
-  type: string;
+  type: VoiceType | string;
+  description?: string;
 }
 
-// Country locale → display name mapping
-const LOCALE_NAMES: Record<string, string> = {
-  "vi-VN": "Vietnam", "en-US": "United States", "en-GB": "United Kingdom",
-  "en-AU": "Australia", "ja-JP": "Japan", "ko-KR": "South Korea",
-  "zh-CN": "China", "zh-TW": "Taiwan", "fr-FR": "France", "de-DE": "Germany",
-  "es-ES": "Spain", "it-IT": "Italy", "pt-BR": "Brazil", "ru-RU": "Russia",
-  "hi-IN": "India", "ar-SA": "Saudi Arabia", "th-TH": "Thailand",
-  "id-ID": "Indonesia", "ms-MY": "Malaysia", "tr-TR": "Turkey",
-  "nl-NL": "Netherlands", "pl-PL": "Poland", "sv-SE": "Sweden",
-  "da-DK": "Denmark", "nb-NO": "Norway", "fi-FI": "Finland",
-  "el-GR": "Greece", "he-IL": "Israel", "ro-RO": "Romania",
-  "hu-HU": "Hungary", "cs-CZ": "Czech Republic", "uk-UA": "Ukraine",
-  "bg-BG": "Bulgaria", "hr-HR": "Croatia", "sk-SK": "Slovakia",
-  "lt-LT": "Lithuania", "lv-LV": "Latvia", "et-EE": "Estonia",
-  "ka-GE": "Georgia", "fa-IR": "Iran", "ar-EG": "Egypt",
-  "ar-IQ": "Iraq", "ar-JO": "Jordan", "ar-KW": "Kuwait",
-  "ar-BH": "Bahrain", "ar-QA": "Qatar", "ar-AE": "United Arab Emirates",
-  "ar-YE": "Yemen", "ar-SY": "Syria", "ar-LB": "Lebanon",
-  "ar-LY": "Libya", "ar-MA": "Morocco", "ar-DZ": "Algeria",
-  "ar-TN": "Tunisia", "bn-BD": "Bangladesh", "ne-NP": "Nepal",
-  "si-LK": "Sri Lanka", "fil-PH": "Philippines", "ur-PK": "Pakistan",
-  "es-MX": "Mexico", "es-AR": "Argentina", "es-CO": "Colombia",
-  "es-CL": "Chile", "es-PE": "Peru", "es-VE": "Venezuela",
-  "es-BO": "Bolivia", "es-UY": "Uruguay", "es-GT": "Guatemala",
-  "es-SV": "El Salvador", "pt-PT": "Portugal", "fr-CA": "Canada",
-  "fr-BE": "Belgium", "de-AT": "Austria", "de-CH": "Switzerland",
-  "en-SG": "Singapore", "en-HK": "Hong Kong", "en-NG": "Nigeria",
-  "en-KE": "Kenya", "en-ZA": "South Africa", "en-GH": "Ghana",
-  "en-TZ": "Tanzania", "en-NZ": "New Zealand",
-  "multi": "Multilingual", "null": "Other",
-};
+interface GeminiStatus {
+  enabled: boolean;
+  voices: Array<{ name: string; gender: string; trait: string }>;
+}
+
+interface RenderResult {
+  url: string;
+  format: "mp3" | "wav";
+  cues: TimedCue[];
+  voiceName: string;
+}
+
+const GEMINI_LOCALES = new Set(["vi-VN", "en-US", "en-GB"]);
+const isEdge = (v: VoiceEntry | null) => !!v && (v.type === "country" || v.type === "character");
+
+function voiceRank(v: VoiceEntry): number {
+  if (v.type === "gemini") return 0;
+  if (RECOMMENDED_VOICES.has(v.voice_id)) return 1;
+  if (v.type === "country" || v.type === "character") return 2;
+  if (v.type === "makevoice") return 3;
+  return 4; // onnx needs local model files
+}
+
+function downloadText(content: string, filename: string, type: string) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function formatDuration(ms: number): string {
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function Home() {
-  // State
+  const tr = useTr();
+
   const [voices, setVoices] = useState<VoiceEntry[]>([]);
-  const [countries, setCountries] = useState<string[]>([]);
+  const [gemini, setGemini] = useState<GeminiStatus>({ enabled: false, voices: [] });
   const [selectedCountry, setSelectedCountry] = useState("vi-VN");
-  const [countryVoices, setCountryVoices] = useState<VoiceEntry[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<VoiceEntry | null>(null);
-  const [text, setText] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [countrySearch, setCountrySearch] = useState("");
   const [voiceSearch, setVoiceSearch] = useState("");
 
+  const [text, setText] = usePersistentState("studio.draft", "");
+  const [settings, setSettings] = usePersistentState<StudioSettings>("studio.settings", DEFAULT_SETTINGS);
+  const [lexicon, setLexicon] = usePersistentState<LexiconEntry[]>("studio.lexicon", []);
+  const [panel, setPanel] = useState<"style" | "lexicon" | "preview">("style");
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [result, setResult] = useState<RenderResult | null>(null);
+  const [currentMs, setCurrentMs] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const audioRef = useRef<HTMLAudioElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const errorTimerRef = useRef<NodeJS.Timeout | null>(null);
   const workerRef = useRef<Worker | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const [modelLoading, setModelLoading] = useState(false);
   const [modelLoaded, setModelLoaded] = useState<string | null>(null);
 
-  // Avatar state
   const avatarRef = useRef<AvatarHandle>(null);
   const [avatarEnabled, setAvatarEnabled] = useState(false);
   const [pitchSemitones, setPitchSemitones] = useState(0);
 
-  // Load avatar preference from localStorage
   useEffect(() => {
     setAvatarEnabled(localStorage.getItem("avatarEnabled") === "true");
   }, []);
 
-  // Show error with auto-dismiss
   const showError = useCallback((msg: string) => {
     setErrorMessage(msg);
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-    errorTimerRef.current = setTimeout(() => setErrorMessage(null), 8000);
+    errorTimerRef.current = setTimeout(() => setErrorMessage(null), 10000);
   }, []);
 
-  // Load voices
+  // ─── Voices ───────────────────────────────────────────────────────────────
+
   useEffect(() => {
     fetch("/api/voices")
       .then((r) => r.json())
-      .then((data: VoiceEntry[]) => {
-        setVoices(data);
-        // Extract unique countries, prioritize vi-VN
-        const locales = [...new Set(data.map((v) => v.locale))];
-        const sorted = locales.sort((a, b) => {
-          if (a === "vi-VN") return -1;
-          if (b === "vi-VN") return 1;
-          return (LOCALE_NAMES[a] || a).localeCompare(LOCALE_NAMES[b] || b);
-        });
-        setCountries(sorted);
-      })
-      .catch(() => showError("Failed to load voices"));
+      .then((data: VoiceEntry[]) => setVoices(data))
+      .catch(() => showError("Không tải được danh sách giọng đọc / Failed to load voices"));
+    fetch("/api/gemini-tts")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: GeminiStatus | null) => data && setGemini(data))
+      .catch(() => undefined);
   }, [showError]);
 
-  // Filter voices by country
-  useEffect(() => {
-    const filtered = voices.filter((v) => v.locale === selectedCountry);
-    setCountryVoices(filtered);
-    // Auto-select first voice
-    if (filtered.length > 0 && (!selectedVoice || selectedVoice.locale !== selectedCountry)) {
-      setSelectedVoice(filtered[0]);
-    }
-  }, [selectedCountry, voices, selectedVoice]);
-
-
-  // Initialize ONNX Worker for Vietnamese voice
-  const initOnnxWorker = useCallback(async (modelName: string) => {
-    if (modelLoaded === modelName) return; // Already loaded
-
-    setModelLoading(true);
-
-    // Terminate previous worker
-    if (workerRef.current) {
-      workerRef.current.terminate();
-      workerRef.current = null;
-    }
-
-    return new Promise<void>((resolve, reject) => {
-      const worker = new Worker("/workers/vi-tts-worker.js", { type: "module" });
-      workerRef.current = worker;
-
-      const onReady = (e: MessageEvent) => {
-        if (e.data.status === "ready") {
-          worker.removeEventListener("message", onReady);
-          setModelLoaded(modelName);
-          setModelLoading(false);
-          resolve();
-        } else if (e.data.status === "error") {
-          worker.removeEventListener("message", onReady);
-          setModelLoading(false);
-          reject(new Error(e.data.data || "Failed to load model"));
-        }
-      };
-
-      worker.addEventListener("message", onReady);
-      worker.addEventListener("error", (err) => {
-        setModelLoading(false);
-        reject(new Error(err.message));
-      });
-
-      worker.postMessage({ type: "init", model: modelName });
+  const countries = useMemo(() => {
+    const locales = [...new Set(voices.map((v) => v.locale))];
+    const pinned = ["vi-VN", "en-US", "en-GB"];
+    return locales.sort((a, b) => {
+      const pa = pinned.indexOf(a);
+      const pb = pinned.indexOf(b);
+      if (pa !== -1 || pb !== -1) return (pa === -1 ? 99 : pa) - (pb === -1 ? 99 : pb);
+      return (LOCALE_NAMES[a] || a).localeCompare(LOCALE_NAMES[b] || b);
     });
-  }, [modelLoaded]);
+  }, [voices]);
 
-  // Play audio through avatar pipeline or native element
-  const playAudio = useCallback(async (blob: Blob, fallbackUrl?: string) => {
-    if (avatarEnabled && avatarRef.current) {
-      await avatarRef.current.playAudio(blob);
-    } else {
-      const url = fallbackUrl || URL.createObjectURL(blob);
-      setAudioUrl(url);
-      setTimeout(() => {
-        if (audioRef.current) {
-          audioRef.current.src = url;
-          audioRef.current.play().catch(() => {});
-        }
-      }, 100);
+  const countryVoices = useMemo(() => {
+    const list: VoiceEntry[] = voices.filter((v) => v.locale === selectedCountry);
+    if (gemini.enabled && GEMINI_LOCALES.has(selectedCountry)) {
+      gemini.voices.forEach((g, i) =>
+        list.push({
+          id: -(i + 1),
+          voice_id: g.name,
+          locale: selectedCountry,
+          display_name: g.name,
+          gender: g.gender,
+          type: "gemini",
+          description: g.trait,
+        }),
+      );
     }
-  }, [avatarEnabled]);
+    return list.sort((a, b) => voiceRank(a) - voiceRank(b));
+  }, [voices, gemini, selectedCountry]);
+
+  // Default: best free voice for the country (never an ONNX model that may be missing).
+  useEffect(() => {
+    if (!countryVoices.length) return;
+    if (selectedVoice && selectedVoice.locale === selectedCountry && countryVoices.some((v) => v.id === selectedVoice.id)) return;
+    setSelectedVoice(countryVoices.find((v) => v.type !== "gemini" && voiceRank(v) <= 2) ?? countryVoices[0]);
+  }, [countryVoices, selectedCountry, selectedVoice]);
+
+  const filteredCountries = countrySearch
+    ? countries.filter((c) => (LOCALE_NAMES[c] || c).toLowerCase().includes(countrySearch.toLowerCase()))
+    : countries;
+  const filteredVoices = voiceSearch
+    ? countryVoices.filter((v) => v.display_name.toLowerCase().includes(voiceSearch.toLowerCase()))
+    : countryVoices;
+
+  // ─── Plan preview (client-side, same planner as the server) ────────────────
+
+  const forcedLang: ScriptLang | undefined = selectedVoice?.locale === "vi-VN" && isEdge(selectedVoice) ? "vi" : undefined;
+  const deferredText = useDeferredValue(text);
+  const plan = useMemo(
+    () =>
+      planScript(deferredText, {
+        ...settings,
+        lexicon,
+        lang: forcedLang,
+        normalize: selectedVoice?.type !== "gemini",
+        phrasing: isEdge(selectedVoice) ? settings.phrasing : false,
+      }),
+    [deferredText, settings, lexicon, forcedLang, selectedVoice],
+  );
+  const estimatedMs = useMemo(() => {
+    // ~4 syllables/s for Vietnamese (≈ words), ~2.7 words/s for English, plus planned pauses.
+    const words = plan.segments.reduce((n, s) => n + s.spoken.split(/\s+/).length, 0);
+    const pauses = plan.segments.reduce((n, s) => n + s.pauseBeforeMs, 0);
+    return (words / (plan.lang === "vi" ? 4 : 2.7)) * 1000 + pauses;
+  }, [plan]);
+
+  const maxChars = selectedVoice && (selectedVoice.type === "makevoice" || selectedVoice.type === "onnx") ? LEGACY_MAX_CHARS : TTS_MAX_CHARS;
+
+  // ─── ONNX worker (client-side Vietnamese) ─────────────────────────────────
+
+  const initOnnxWorker = useCallback(
+    async (modelName: string) => {
+      if (modelLoaded === modelName) return;
+      setModelLoading(true);
+      workerRef.current?.terminate();
+      workerRef.current = null;
+
+      return new Promise<void>((resolve, reject) => {
+        const worker = new Worker("/workers/vi-tts-worker.js", { type: "module" });
+        workerRef.current = worker;
+        const onReady = (e: MessageEvent) => {
+          if (e.data.status === "ready") {
+            worker.removeEventListener("message", onReady);
+            setModelLoaded(modelName);
+            setModelLoading(false);
+            resolve();
+          } else if (e.data.status === "error") {
+            worker.removeEventListener("message", onReady);
+            setModelLoading(false);
+            reject(new Error(e.data.data || "Failed to load model"));
+          }
+        };
+        worker.addEventListener("message", onReady);
+        worker.addEventListener("error", (err) => {
+          setModelLoading(false);
+          reject(new Error(err.message));
+        });
+        worker.postMessage({ type: "init", model: modelName });
+      });
+    },
+    [modelLoaded],
+  );
+
+  // ─── Playback ─────────────────────────────────────────────────────────────
+
+  const playAudio = useCallback(
+    async (blob: Blob, url: string) => {
+      if (avatarEnabled && avatarRef.current) {
+        await avatarRef.current.playAudio(blob);
+      } else {
+        setTimeout(() => {
+          if (audioRef.current) {
+            audioRef.current.src = url;
+            audioRef.current.play().catch(() => {});
+          }
+        }, 50);
+      }
+    },
+    [avatarEnabled],
+  );
+
+  // Smooth karaoke clock while playing.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    let raf = 0;
+    const tick = () => {
+      setCurrentMs(el.currentTime * 1000);
+      if (!el.paused) raf = requestAnimationFrame(tick);
+    };
+    const onPlay = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(tick);
+    };
+    const onSeek = () => setCurrentMs(el.currentTime * 1000);
+    el.addEventListener("play", onPlay);
+    el.addEventListener("seeked", onSeek);
+    el.addEventListener("pause", onSeek);
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener("play", onPlay);
+      el.removeEventListener("seeked", onSeek);
+      el.removeEventListener("pause", onSeek);
+    };
+  }, [result]);
+
+  const seek = (ms: number) => {
+    const el = audioRef.current;
+    if (!el) return;
+    el.currentTime = ms / 1000;
+    el.play().catch(() => {});
+  };
 
   const handlePitchChange = useCallback((val: number) => {
     setPitchSemitones(val);
     setAudioPitch(val);
   }, []);
 
-  // Generate TTS — Vietnamese ONNX (client-side), MakeVoice/ElevenLabs (premium), or Edge TTS (default)
+  // ─── Generate ─────────────────────────────────────────────────────────────
+
+  const streamRender = useCallback(async (url: string, body: unknown, signal: AbortSignal) => {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal,
+    });
+    const cues: TimedCue[] = [];
+    let format = "mp3" as "mp3" | "wav";
+    const { audioChunks } = await readNdjsonAudioStream(res, {
+      onMessage: (msg: NdjsonMessage) => {
+        if (msg.status === "progress") setProgress({ done: Number(msg.done), total: Number(msg.total) });
+        if (msg.status === "cue" && msg.cue) cues.push(msg.cue as TimedCue);
+        if (msg.status === "done" && msg.format === "wav") format = "wav";
+      },
+      onError: (msg) => {
+        throw new Error(msg.message || "Generation failed");
+      },
+    });
+    return { audioChunks, cues, format };
+  }, []);
+
   const generateSpeech = useCallback(async () => {
     if (!text.trim() || !selectedVoice || isGenerating) return;
+    if (text.length > maxChars) {
+      showError(tr(`Văn bản vượt quá ${maxChars.toLocaleString()} ký tự cho giọng này.`, `Text exceeds ${maxChars} characters for this voice.`));
+      return;
+    }
 
-    const isOnnxVoice = selectedVoice.type === "onnx";
-
+    abortRef.current?.abort();
+    const abort = new AbortController();
+    abortRef.current = abort;
     setIsGenerating(true);
-    setAudioUrl(null);
+    setProgress(null);
+    if (result) URL.revokeObjectURL(result.url);
+    setResult(null);
+    setCurrentMs(0);
 
     try {
-      if (isOnnxVoice) {
-        // Vietnamese: client-side ONNX inference
-        await initOnnxWorker(selectedVoice.voice_id);
+      let blob: Blob;
+      let cues: TimedCue[] = [];
+      let format: "mp3" | "wav" = "mp3";
 
+      if (selectedVoice.type === "onnx") {
+        await initOnnxWorker(selectedVoice.voice_id);
         const worker = workerRef.current;
         if (!worker) throw new Error("Worker not initialized");
-
-        const audioBlob = await new Promise<Blob>((resolve, reject) => {
+        const prepared = mapPauseTags(applyLexicon(text.trim(), lexicon), () => ", ");
+        blob = await new Promise<Blob>((resolve, reject) => {
           const chunks: Blob[] = [];
-
           const onMessage = (e: MessageEvent) => {
             const { status } = e.data;
-            if (status === "stream") {
-              chunks.push(e.data.chunk.audio);
-            } else if (status === "complete") {
+            if (status === "stream") chunks.push(e.data.chunk.audio);
+            else if (status === "complete") {
               worker.removeEventListener("message", onMessage);
               resolve(e.data.audio || new Blob(chunks, { type: "audio/wav" }));
             } else if (status === "error") {
@@ -213,264 +352,360 @@ export default function Home() {
               reject(new Error(e.data.data || "Generation failed"));
             }
           };
-
           worker.addEventListener("message", onMessage);
-          worker.postMessage({
-            type: "generate",
-            text: text.trim(),
-            voice: 0,
-            speed: 1.0,
-          });
+          worker.postMessage({ type: "generate", text: prepared, voice: 0, speed: 1 + settings.rate / 100 });
         });
-
-        const url = URL.createObjectURL(audioBlob);
-        setAudioUrl(url);
-        await playAudio(audioBlob, url);
-      } else if (selectedVoice.type === "makevoice") {
-        // MakeVoice.io ElevenLabs integration
-        const res = await fetch("/api/makevoice-tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            voice_id: selectedVoice.voice_id, 
-            text: text.trim(),
-            model_id: "eleven_multilingual_v2"
-          }),
-        });
-
-        const { audioChunks, finalMessage } = await readNdjsonAudioStream(res, {
-          onError: (msg) => { throw new Error(msg.message || "MakeVoice generation failed"); },
-        });
-
-        if (audioChunks.length > 0) {
-          const blob = new Blob(audioChunks, { type: "audio/mpeg" });
-          const blobUrl = URL.createObjectURL(blob);
-          setAudioUrl(blobUrl);
-          playAudio(blob, blobUrl);
-        } else if (finalMessage?.url) {
-          setAudioUrl(finalMessage.url as string);
-          if (audioRef.current) {
-            audioRef.current.src = finalMessage.url as string;
-            audioRef.current.play().catch(() => {});
-          }
-        }
+        format = "wav";
       } else {
-        // Edge TTS (Microsoft Neural) — handles streaming NDJSON audio chunks
-        const res = await fetch("/api/tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: text.trim(), id: selectedVoice.id }),
-        });
-
-        const { audioChunks, finalMessage } = await readNdjsonAudioStream(res, {
-          onError: (msg) => { throw new Error(msg.message || "Generation failed"); },
-        });
-
-        if (audioChunks.length > 0) {
-          const blob = new Blob(audioChunks, { type: "audio/mpeg" });
-          const blobUrl = URL.createObjectURL(blob);
-          setAudioUrl(blobUrl);
-          playAudio(blob, blobUrl);
-        } else if (finalMessage?.url) {
-          setAudioUrl(finalMessage.url as string);
-          if (audioRef.current) {
-            audioRef.current.src = finalMessage.url as string;
-            audioRef.current.play().catch(() => {});
-          }
+        let out: Awaited<ReturnType<typeof streamRender>>;
+        if (selectedVoice.type === "makevoice") {
+          // Model is chosen server-side (Multilingual v2 does not support Vietnamese).
+          out = await streamRender("/api/makevoice-tts", { voice_id: selectedVoice.voice_id, text: text.trim(), lexicon }, abort.signal);
+        } else if (selectedVoice.type === "gemini") {
+          out = await streamRender(
+            "/api/gemini-tts",
+            { text: text.trim(), voice: selectedVoice.voice_id, style: settings.style, pauseScale: settings.pauseScale, lexicon },
+            abort.signal,
+          );
+        } else {
+          out = await streamRender(
+            "/api/tts",
+            {
+              text: text.trim(),
+              id: selectedVoice.id,
+              style: settings.style,
+              rate: settings.rate,
+              pitch: settings.pitch,
+              pauseScale: settings.pauseScale,
+              phrasing: settings.phrasing,
+              lexicon,
+            },
+            abort.signal,
+          );
         }
+        if (!out.audioChunks.length) throw new Error(tr("Không nhận được âm thanh", "No audio received"));
+        format = out.format;
+        cues = out.cues;
+        blob = new Blob(out.audioChunks, { type: format === "wav" ? "audio/wav" : "audio/mpeg" });
       }
+
+      const url = URL.createObjectURL(blob);
+      setResult({ url, format, cues, voiceName: selectedVoice.display_name });
+      await playAudio(blob, url);
     } catch (err) {
-      showError(err instanceof Error ? err.message : "Failed to generate speech");
+      if ((err as Error)?.name !== "AbortError") {
+        showError(err instanceof Error ? err.message : tr("Tạo giọng đọc thất bại", "Failed to generate speech"));
+      }
     } finally {
       setIsGenerating(false);
+      setProgress(null);
     }
-  }, [text, selectedVoice, isGenerating, showError, initOnnxWorker, playAudio]);
+  }, [text, selectedVoice, isGenerating, maxChars, result, settings, lexicon, initOnnxWorker, playAudio, streamRender, showError, tr]);
 
-  // Filter countries by search
-  const filteredCountries = countrySearch
-    ? countries.filter((c) => {
-        const name = LOCALE_NAMES[c] || c;
-        return name.toLowerCase().includes(countrySearch.toLowerCase());
-      })
-    : countries;
+  // ─── Editor helpers ───────────────────────────────────────────────────────
 
-  // Filter voices by search
-  const filteredVoices = voiceSearch
-    ? countryVoices.filter((v) =>
-        v.display_name.toLowerCase().includes(voiceSearch.toLowerCase())
-      )
-    : countryVoices;
+  const insertAtCursor = (snippet: string) => {
+    const el = textareaRef.current;
+    if (!el) {
+      setText((t) => t + snippet);
+      return;
+    }
+    const { selectionStart: s, selectionEnd: e } = el;
+    const next = text.slice(0, s) + snippet + text.slice(e);
+    setText(next.slice(0, maxChars));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.selectionStart = el.selectionEnd = s + snippet.length;
+    });
+  };
+
+  const loadSample = (id: string) => {
+    const sample = SAMPLE_SCRIPTS.find((s) => s.id === id);
+    if (!sample) return;
+    setText(sample.text);
+    setSettings({ ...settings, style: sample.style });
+    const wantCountry = sample.lang === "vi" ? "vi-VN" : "en-US";
+    if (selectedCountry !== wantCountry) {
+      setSelectedCountry(wantCountry);
+      setSelectedVoice(null);
+    }
+  };
+
+  const baseName = `tts-${(result?.voiceName || "audio").replace(/[^\p{L}\p{N}]+/gu, "-")}`;
+
+  // ─── Render ───────────────────────────────────────────────────────────────
+
+  const chip = (active: boolean) =>
+    `px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1 ${
+      active
+        ? "bg-brand text-white shadow-sm"
+        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+    }`;
+  const sectionTitle = "text-sm font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3";
 
   return (
-    <div className="flex-grow max-w-4xl mx-auto w-full px-4 py-8">
-      {/* Hero */}
+    <div className="flex-grow max-w-5xl mx-auto w-full px-4 py-8">
       <div className="text-center mb-8">
         <h2 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
-          Text to Speech <span className="text-brand">Premium</span>
+          {tr("Giọng đọc AI", "AI Voice")} <span className="text-brand">Studio</span>
         </h2>
         <p className="text-gray-500 dark:text-gray-400 font-bold">
-          350+ voices · 80+ languages · 19 Vietnamese ONNX voices that run in your browser.
+          {tr(
+            "Đọc bản tin, sách nói, quảng cáo tự nhiên như người thật — ngắt nghỉ chuẩn, xuất phụ đề SRT.",
+            "Human-like narration for news, audiobooks and ads — broadcast pauses, SRT subtitles.",
+          )}
         </p>
       </div>
 
-        <div className="bg-white dark:bg-dark-card rounded-3xl p-6 md:p-8 shadow-xl border border-gray-200 dark:border-dark-border">
-          {/* Error Banner */}
-          {errorMessage && (
-            <div className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 flex items-center justify-between">
-              <span className="text-sm text-red-700 dark:text-red-300">{errorMessage}</span>
-              <button onClick={() => setErrorMessage(null)} className="text-red-400 hover:text-red-600 font-bold">x</button>
-            </div>
-          )}
+      <div className="bg-white dark:bg-dark-card rounded-3xl p-5 md:p-8 shadow-xl border border-gray-200 dark:border-dark-border">
+        {errorMessage && (
+          <div className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-red-700 dark:text-red-300">{errorMessage}</span>
+            <button onClick={() => setErrorMessage(null)} className="text-red-400 hover:text-red-600 font-bold">
+              ✕
+            </button>
+          </div>
+        )}
 
-          {/* Step 1: Choose Country */}
-          <div className="mb-6">
-            <h3 className="text-sm font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
-              1. Choose Country
-            </h3>
+        {/* 1. Language */}
+        <div className="mb-6">
+          <h3 className={sectionTitle}>1. {tr("Ngôn ngữ / quốc gia", "Language / country")}</h3>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {countries.slice(0, 3).map((locale) => (
+              <button
+                key={locale}
+                onClick={() => {
+                  setSelectedCountry(locale);
+                  setVoiceSearch("");
+                }}
+                className={chip(selectedCountry === locale)}
+              >
+                {LOCALE_NAMES[locale] || locale}
+              </button>
+            ))}
+            <select
+              value={countries.slice(0, 3).includes(selectedCountry) ? "" : selectedCountry}
+              onChange={(e) => e.target.value && setSelectedCountry(e.target.value)}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 outline-none"
+            >
+              <option value="">{tr(`+ ${Math.max(0, countries.length - 3)} ngôn ngữ khác…`, `+ ${Math.max(0, countries.length - 3)} more…`)}</option>
+              {filteredCountries.slice(3).map((locale) => (
+                <option key={locale} value={locale}>
+                  {LOCALE_NAMES[locale] || locale} ({locale})
+                </option>
+              ))}
+            </select>
             <input
               type="text"
-              placeholder="Search country..."
+              placeholder={tr("Lọc…", "Filter…")}
               value={countrySearch}
               onChange={(e) => setCountrySearch(e.target.value)}
-              className="w-full mb-3 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:border-purple-400"
+              className="w-24 px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none focus:border-brand"
             />
-            <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-              {filteredCountries.map((locale) => (
-                <button
-                  key={locale}
-                  onClick={() => { setSelectedCountry(locale); setVoiceSearch(""); }}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
-                    selectedCountry === locale
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                  }`}
-                >
-                  {LOCALE_NAMES[locale] || locale}
+          </div>
+        </div>
+
+        {/* 2. Voice */}
+        <div className="mb-6">
+          <h3 className={sectionTitle}>
+            2. {tr("Giọng đọc", "Voice")}
+            <span className="ml-2 text-brand font-mono text-xs">{countryVoices.length}</span>
+          </h3>
+          {countryVoices.length > 8 && (
+            <input
+              type="text"
+              placeholder={tr("Tìm giọng…", "Search voice…")}
+              value={voiceSearch}
+              onChange={(e) => setVoiceSearch(e.target.value)}
+              className="w-full mb-3 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:border-brand"
+            />
+          )}
+          <div className="flex flex-wrap gap-1.5 max-h-44 overflow-y-auto">
+            {filteredVoices.map((voice) => (
+              <button
+                key={voice.id}
+                onClick={() => setSelectedVoice(voice)}
+                title={voice.description}
+                className={chip(selectedVoice?.id === voice.id)}
+              >
+                <span className="opacity-60">{voice.gender.toLowerCase() === "male" ? "♂" : "♀"}</span>
+                {voice.display_name}
+                {RECOMMENDED_VOICES.has(voice.voice_id) && (
+                  <span className="ml-1 px-1 py-0.5 text-[9px] font-black rounded bg-emerald-500 text-white leading-none">
+                    ★ {tr("KHUYÊN DÙNG", "BEST")}
+                  </span>
+                )}
+                {voice.type === "gemini" && (
+                  <span className="ml-1 px-1 py-0.5 text-[9px] font-black rounded bg-gradient-to-r from-fuchsia-500 to-indigo-500 text-white leading-none">
+                    PREMIUM AI
+                  </span>
+                )}
+                {voice.type === "onnx" && (
+                  <span className="ml-1 px-1 py-0.5 text-[9px] font-black rounded bg-green-600 text-white leading-none">LOCAL</span>
+                )}
+                {voice.type === "character" && (
+                  <span className="ml-1 px-1 py-0.5 text-[9px] font-black rounded bg-amber-500 text-white leading-none">MULTI</span>
+                )}
+                {voice.type === "makevoice" && (
+                  <span className="ml-1 px-1 py-0.5 text-[9px] font-black rounded bg-blue-500 text-white leading-none">ELEVENLABS</span>
+                )}
+              </button>
+            ))}
+            {filteredVoices.length === 0 && <p className="text-sm text-gray-400 py-2">{tr("Không có giọng phù hợp", "No voices found")}</p>}
+          </div>
+          {selectedVoice?.type === "onnx" && (
+            <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">
+              {tr(
+                "Giọng LOCAL chạy trong trình duyệt và cần file model tải riêng (public/models/vi). Ngắt nghỉ nâng cao chỉ áp dụng cho giọng Microsoft/Gemini.",
+                "LOCAL voices run in-browser and need separately downloaded model files. Advanced pauses apply to Microsoft/Gemini voices only.",
+              )}
+            </p>
+          )}
+        </div>
+
+        {/* 3. Script */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 className={sectionTitle + " mb-0"}>3. {tr("Kịch bản", "Script")}</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {SAMPLE_SCRIPTS.map((s) => (
+                <button key={s.id} onClick={() => loadSample(s.id)} className="px-2.5 py-1 text-[11px] font-bold rounded-full border border-gray-200 dark:border-gray-700 hover:border-brand hover:text-brand transition">
+                  {tr("Mẫu", "Try")}: {tr(s.label.vi, s.label.en)}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Step 2: Choose Voice */}
-          <div className="mb-6">
-            <h3 className="text-sm font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
-              2. Choose Voice
-              <span className="ml-2 text-purple-500 font-mono text-xs">{countryVoices.length} voices</span>
-            </h3>
-            {countryVoices.length > 8 && (
-              <input
-                type="text"
-                placeholder="Search voice..."
-                value={voiceSearch}
-                onChange={(e) => setVoiceSearch(e.target.value)}
-                className="w-full mb-3 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:border-purple-400"
-              />
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, maxChars))}
+            placeholder={tr(
+              "Nhập hoặc dán văn bản… Xuống dòng để tách đoạn. Dòng ngắn không dấu chấm ở đầu sẽ được đọc như tiêu đề.",
+              "Type or paste your script… Blank lines separate paragraphs. A short first line without a period is read as a headline.",
             )}
-            <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
-              {filteredVoices.map((voice) => (
-                <button
-                  key={voice.id}
-                  onClick={() => setSelectedVoice(voice)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition flex items-center gap-1 ${
-                    selectedVoice?.id === voice.id
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                  }`}
-                >
-                  <span className="opacity-60">{voice.gender === "male" || voice.gender === "Male" ? "\u2642" : "\u2640"}</span>
-                  {voice.display_name}
-                  {voice.type === "onnx" && (
-                    <span className="ml-1 px-1 py-0.5 text-[9px] font-black rounded bg-green-500 text-white leading-none">LOCAL</span>
-                  )}
-                  {voice.type === "character" && (
-                    <span className="ml-1 px-1 py-0.5 text-[9px] font-black rounded bg-amber-500 text-white leading-none">MULTI</span>
-                  )}
-                  {voice.type === "makevoice" && (
-                    <span className="ml-1 px-1 py-0.5 text-[9px] font-black rounded bg-blue-500 text-white leading-none">PREMIUM</span>
-                  )}
+            className="w-full h-56 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl resize-y outline-none text-sm leading-relaxed focus:border-brand"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                generateSpeech();
+              }
+            }}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2 mt-1.5 px-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-gray-400">{tr("Chèn ngắt:", "Insert pause:")}</span>
+              {["0.5s", "1s", "2s"].map((d) => (
+                <button key={d} onClick={() => insertAtCursor(` [ngắt ${d}] `)} className="px-2 py-0.5 text-[11px] font-bold rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 hover:opacity-80">
+                  ⏸ {d}
                 </button>
               ))}
-              {filteredVoices.length === 0 && (
-                <p className="text-sm text-gray-400 py-2">No voices found</p>
+              {text && (
+                <button onClick={() => setText("")} className="ml-2 text-[11px] font-bold text-gray-400 hover:text-red-500">
+                  {tr("Xoá", "Clear")}
+                </button>
               )}
             </div>
+            <span className={`text-xs font-bold ${text.length > maxChars * 0.9 ? "text-red-500" : "text-gray-400"}`}>
+              {plan.segments.length} {tr("câu", "sentences")} · ~{formatDuration(estimatedMs)} · {text.length.toLocaleString()}/{maxChars.toLocaleString()} · Ctrl+Enter
+            </span>
           </div>
+        </div>
 
-          {/* Step 3: Enter Text */}
-          <div className="mb-6">
-            <h3 className="text-sm font-black uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">
-              3. Enter Text
-            </h3>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value.slice(0, 1000))}
-              placeholder="Enter text to convert to speech..."
-              className="w-full h-36 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl resize-none outline-none text-sm leading-relaxed focus:border-purple-400"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                  e.preventDefault();
-                  generateSpeech();
-                }
-              }}
+        {/* 4. Direction */}
+        <div className="mb-6 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="flex border-b border-gray-200 dark:border-gray-700 text-xs font-black">
+            {(
+              [
+                ["style", tr("🎚️ Phong cách đọc", "🎚️ Delivery")],
+                ["preview", tr("👁️ Xem trước cách đọc", "👁️ Reading preview")],
+                ["lexicon", tr(`📖 Từ điển phát âm${lexicon.length ? ` (${lexicon.length})` : ""}`, `📖 Pronunciations${lexicon.length ? ` (${lexicon.length})` : ""}`)],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setPanel(id)}
+                className={`flex-1 px-3 py-2.5 transition ${panel === id ? "bg-brand/10 text-brand" : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="p-4">
+            {panel === "style" && (
+              <StylePanel value={settings} onChange={setSettings} fineControls={isEdge(selectedVoice)} />
+            )}
+            {panel === "preview" && <ReadingPreview plan={plan} />}
+            {panel === "lexicon" && <LexiconEditor entries={lexicon} onChange={setLexicon} />}
+          </div>
+        </div>
+
+        {/* Generate */}
+        <button
+          onClick={generateSpeech}
+          disabled={!text.trim() || !selectedVoice || isGenerating || modelLoading}
+          className="relative w-full py-4 rounded-xl font-black text-white text-lg bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg overflow-hidden"
+        >
+          {progress && (
+            <span
+              className="absolute inset-y-0 left-0 bg-white/20 transition-all"
+              style={{ width: `${(progress.done / Math.max(1, progress.total)) * 100}%` }}
             />
-            <div className="flex justify-between mt-1 px-1">
-              <span className={`text-xs font-bold ${text.length > 900 ? "text-red-500" : "text-gray-400"}`}>
-                {text.length}/1000
-              </span>
-              <span className="text-xs text-gray-400">Ctrl+Enter</span>
-            </div>
-          </div>
-
-          {/* Generate Button */}
-          <button
-            onClick={generateSpeech}
-            disabled={!text.trim() || !selectedVoice || isGenerating || modelLoading}
-            className="w-full py-4 rounded-xl font-black text-white text-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg flex items-center justify-center gap-2"
-          >
-            {modelLoading ? (
-              <span>Loading voice model...</span>
-            ) : isGenerating ? (
-              <span>Generating...</span>
-            ) : (
-              <span>Generate Speech</span>
-            )}
-          </button>
-
-          {/* Avatar + Pitch Control */}
-          <div className="mt-4 flex items-center justify-between">
-            <AvatarToggle enabled={avatarEnabled} onChange={setAvatarEnabled} />
-            {avatarEnabled && (
-              <div className="flex-1 ml-4">
-                <PitchControl value={pitchSemitones} onChange={handlePitchChange} />
-              </div>
-            )}
-          </div>
-
-          {avatarEnabled && (
-            <div className="mt-4">
-              <AvatarContainer ref={avatarRef} />
-            </div>
           )}
+          <span className="relative">
+            {modelLoading
+              ? tr("Đang tải model giọng…", "Loading voice model…")
+              : isGenerating
+                ? progress
+                  ? tr(`Đang thu âm ${progress.done}/${progress.total}…`, `Recording ${progress.done}/${progress.total}…`)
+                  : tr("Đang chuẩn bị…", "Preparing…")
+                : tr("🎙️ Tạo giọng đọc", "🎙️ Generate voice")}
+          </span>
+        </button>
 
-          {/* Audio Player */}
-          {audioUrl && (
-            <div className="mt-6 bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
-              <audio ref={audioRef} controls className="w-full" src={audioUrl} />
-              <div className="mt-2 flex items-center justify-between">
-                <span className="text-xs text-gray-400">
-                  {selectedVoice?.display_name} ({LOCALE_NAMES[selectedVoice?.locale || ""] || selectedVoice?.locale})
-                </span>
-                <a
-                  href={audioUrl}
-                  download={`tts-${selectedVoice?.display_name || "audio"}.mp3`}
-                  className="text-xs font-bold text-purple-600 hover:underline"
-                >
-                  Download MP3
-                </a>
-              </div>
+        <div className="mt-4 flex items-center justify-between">
+          <AvatarToggle enabled={avatarEnabled} onChange={setAvatarEnabled} />
+          {avatarEnabled && (
+            <div className="flex-1 ml-4">
+              <PitchControl value={pitchSemitones} onChange={handlePitchChange} />
             </div>
           )}
         </div>
+        {avatarEnabled && (
+          <div className="mt-4">
+            <AvatarContainer ref={avatarRef} />
+          </div>
+        )}
+
+        {/* Result */}
+        {result && (
+          <div className="mt-6 bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-3">
+            <audio ref={audioRef} controls className="w-full" src={result.url} />
+            {result.cues.length > 0 && !avatarEnabled && (
+              <Transcript cues={result.cues} currentMs={currentMs} onSeek={seek} />
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-gray-400">
+                {result.voiceName} · {LOCALE_NAMES[selectedVoice?.locale || ""] || selectedVoice?.locale}
+              </span>
+              <div className="flex gap-3">
+                <a href={result.url} download={`${baseName}.${result.format}`} className="text-xs font-bold text-brand hover:underline">
+                  ⬇ {result.format.toUpperCase()}
+                </a>
+                {result.cues.length > 0 && (
+                  <>
+                    <button onClick={() => downloadText(toSrt(result.cues), `${baseName}.srt`, "application/x-subrip")} className="text-xs font-bold text-brand hover:underline">
+                      ⬇ SRT
+                    </button>
+                    <button onClick={() => downloadText(toVtt(result.cues), `${baseName}.vtt`, "text/vtt")} className="text-xs font-bold text-brand hover:underline">
+                      ⬇ VTT
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
