@@ -130,7 +130,8 @@ function convertPercentages(text: string): string {
   return t;
 }
 
-const MULTIPLIER = "(?:\\s*(nghìn|ngàn|triệu|tỷ|tỉ))?";
+const MULTIPLIER = "(?:\\s*(nghìn|ngàn|triệu|tỷ|tỉ)|(k|K|m|M|bn|B)(?![\\p{L}\\d]))?";
+const SHORT_MULTIPLIER: Record<string, string> = { k: "nghìn", K: "nghìn", m: "triệu", M: "triệu", bn: "tỷ", B: "tỷ" };
 
 function convertCurrency(text: string): string {
   let t = text;
@@ -139,13 +140,20 @@ function convertCurrency(text: string): string {
   t = t.replace(/(\d+(?:,\d+)?)\s*(?:đồng|VND|vnđ)(?![\p{L}])/giu, (_m, n) => amount(n) + " đồng");
   t = t.replace(/(\d+(?:,\d+)?)đ(?![a-zà-ỹ])/gi, (_m, n) => amount(n) + " đồng");
   // USD: $100, $1,5 triệu, 100 USD, 2 tỷ USD
-  t = t.replace(new RegExp(`\\$\\s*(\\d+(?:,\\d+)?)${MULTIPLIER}`, "g"), (_m, n, mult) => amount(n, mult) + " đô la");
+  t = t.replace(new RegExp(`\\$\\s*(\\d+(?:,\\d+)?)${MULTIPLIER}`, "gu"), (_m, n, mult, short) =>
+    amount(n, mult ?? SHORT_MULTIPLIER[short]) + " đô la");
   t = t.replace(/(\d+(?:,\d+)?)\s*(?:USD|\$)/gi, (_m, n) => amount(n) + " đô la");
   return t;
 }
 
 function convertTimes(text: string): string {
   let t = text;
+  // Hour ranges: "8h-17h", "7h30-9h" → "tám giờ đến mười bảy giờ"
+  const hour = (h: string, min?: string) =>
+    `${numberToVietnamese(h)} giờ${min ? " " + numberToVietnamese(min) : ""}`;
+  t = t.replace(/(?<!\d)(\d{1,2})h(\d{2})?\s*[-–]\s*(\d{1,2})h(\d{2})?(?![a-zà-ỹ\d])/gi, (m, h1, m1, h2, m2) =>
+    parseInt(h1) <= 24 && parseInt(h2) <= 24 ? `${hour(h1, m1)} đến ${hour(h2, m2)}` : m
+  );
   // HH:MM:SS
   t = t.replace(/(\d{1,2}):(\d{2})(?::(\d{2}))?/g, (_m, h, min, sec) => {
     let r = numberToVietnamese(h) + " giờ";
@@ -185,8 +193,14 @@ function convertDates(text: string): string {
     return `${prefix}${dayWords(d, m)} năm ${numberToVietnamese(y)}`;
   });
   // MM/YYYY — "tháng 12/2024", "12/2024"
-  t = t.replace(/(tháng\s*)?(?<!\d[/-]?)(\d{1,2})[/-](\d{4})(?!\d)/gi, (_m, kw, m, y) => {
+  t = t.replace(/(tháng\s*)?(?<!\d[/-]?)(\d{1,2})[/-](\d{4})(?![\d/])/gi, (_m, kw, m, y, offset, full) => {
     const mi = parseInt(m);
+    const before = full.slice(0, offset);
+    // Legal document numbers: "Thông tư 12/2020/TT-BTC", "Luật số 12/2024"
+    if (!kw && /(?:số|thông tư|nghị định|quyết định|luật|chỉ thị|điều|công văn)\s*$/i.test(before)) return _m;
+    // Quarters: "quý 1/2025" → "quý một năm …"
+    if (!kw && /quý\s*$/i.test(before) && mi >= 1 && mi <= 4)
+      return `${numberToVietnamese(m)} năm ${numberToVietnamese(y)}`;
     if (mi < 1 || mi > 12) return _m;
     return `${kw ? kw.trimEnd() + " " : "tháng "}${monthToVietnamese(m)} năm ${numberToVietnamese(y)}`;
   });
@@ -195,13 +209,15 @@ function convertDates(text: string): string {
   // ("ngày 2-9", "Chiều 5-6"), when listed with another date ("30-4 và
   // 1-5", "từ 1-5 đến 10-5"), or when day > month outside a score context;
   // otherwise "2-3 ngày" is a range and "2-1" a score.
-  t = t.replace(/(?<![\d-])(\d{1,2})([/-])(\d{1,2})(?![/-]?\d)/g, (_m, d, sep, m, offset, full) => {
+  t = t.replace(/(?<![\d.,-])(\d{1,2})([/-])(\d{1,2})(?![/-]?\d)/g, (_m, d, sep, m, offset, full) => {
     const after = full.slice(offset + _m.length);
     const before = full.slice(0, offset);
     if (/^\s*%/.test(after)) return _m;
-    if (sep === "/") {
+    if (sep === "/" && parseInt(d) < parseInt(m)) {
       if (/(?:thứ|hạng|xếp|top)\s*$/i.test(before)) return `${numberToVietnamese(d)} trên ${numberToVietnamese(m)}`;
-      if (/(?:tỷ lệ|tỉ lệ|chiếm|khoảng|gần|hơn)\s*$/i.test(before)) return `${numberToVietnamese(d)} phần ${numberToVietnamese(m)}`;
+      const approx = /(?:khoảng|gần|hơn)\s*$/i.test(before) && /^\s*\p{Ll}/u.test(after) && !/^\s*năm/.test(after);
+      if (/(?:tỷ lệ|tỉ lệ|chiếm)\s*$/i.test(before) || approx)
+        return `${numberToVietnamese(d)} phần ${numberToVietnamese(m)}`;
     }
     if (sep === "-") {
       // "tháng 3-4" → "tháng ba đến tháng tư"
@@ -210,9 +226,16 @@ function convertDates(text: string): string {
         if (a >= 1 && b <= 12 && a < b) return `${monthToVietnamese(d)} đến tháng ${monthToVietnamese(m)}`;
         return _m;
       }
-      const afterKeyword = new RegExp(`${DATE_KEYWORDS}\\s*$`, "i").test(before);
-      const listedAfterDate = new RegExp(`${DATE_KEYWORDS}\\s*\\d{1,2}-\\d{1,2}\\s*(?:và|,|đến|tới|hoặc)\\s*$`, "i").test(before);
-      const listedBeforeDate = /^\s*(?:và|,|đến|tới|hoặc)\s*\d{1,2}-\d{1,2}(?![-\d])/i.test(after);
+      const afterKeyword =
+        new RegExp(`${DATE_KEYWORDS}\\s*$`, "iu").test(before) ||
+        (new RegExp(`${TIME_OF_DAY}\\s*$`, "iu").test(before) && DATELINE_END.test(after));
+      const listedAfterDate = new RegExp(
+        `${DATE_KEYWORDS}\\s*\\d{1,2}-\\d{1,2}\\s*(?:và|,|đến|tới|hoặc)\\s*$`,
+        "iu",
+      ).test(before);
+      // "từ 1-5 đến 10-5": the partner must itself be unambiguous (day > month).
+      const partner = after.match(/^\s*(?:và|,|đến|tới|hoặc)\s*(\d{1,2})-(\d{1,2})(?![-\d])/i);
+      const listedBeforeDate = !!partner && parseInt(partner[1]) > parseInt(partner[2]);
       const dayAfterMonth = parseInt(d) > parseInt(m) && !inScoreContext(before);
       if (!afterKeyword && !listedAfterDate && !listedBeforeDate && !dayAfterMonth) return _m;
     }
@@ -238,14 +261,27 @@ function convertYearRanges(text: string): string {
   );
 }
 
-/** Words that make "D-M" a date: "ngày 2-9", "Chiều 5-6", "rạng sáng 1-10". */
-const DATE_KEYWORDS = "(?:ngày|hôm|mùng|mồng|sáng|trưa|chiều|tối|đêm|khuya|rạng sáng)";
+/** Words that always make "D-M" a date: "ngày 2-9", "mùng 2-9". */
+const DATE_KEYWORDS = "(?<!\\p{L})(?:ngày|hôm|mùng|mồng)";
+/**
+ * Time-of-day words start datelines ("Chiều 5-6, …") but also counts
+ * ("Sáng 2-3 người", "khuya 2-3 giờ"): only a date when the pair is followed
+ * by punctuation, the end, or a capitalised word.
+ */
+const TIME_OF_DAY = "(?<!\\p{L})(?:sáng|trưa|chiều|tối|đêm|khuya|rạng sáng)";
+const DATELINE_END = /^\s*(?:[,.;:!?)]|$|\p{Lu})/u;
 
-/** Match-report vocabulary within the last few words: "thắng HAGL 2-1". */
-const SCORE_WORDS = /(?:tỷ số|tỉ số|thắng|thua|hòa|hoà|đánh bại|hạ gục|cầm hòa|cầm hoà|chung cuộc|cách biệt|dẫn trước|gỡ hòa|gỡ hoà)/i;
+/**
+ * Match-report vocabulary within the last few words: "thắng HAGL 2-1".
+ * Whole words only and case-sensitive for the verbs, so names ("Hoàng",
+ * "Khánh Hòa", "Hòa Phát") and compounds ("chiến thắng", "thắng lợi",
+ * "thua lỗ", "hòa bình") don't count.
+ */
+const SCORE_WORDS =
+  /(?<!\p{L})(?:[Tt][ỷỉ] số|chung cuộc|cách biệt|đánh bại|hạ gục|dẫn trước|(?<!chiến )thắng(?! lợi)|thua(?! lỗ)|(?:cầm |gỡ )?h(?:òa|oà)(?! (?:bình|giải|hợp|nhập|thuận|vốn)))(?!\p{L})/u;
 
 function inScoreContext(before: string): boolean {
-  const lastWords = before.trim().split(/\s+/).slice(-6).join(" ");
+  const lastWords = before.trim().split(/\s+/).slice(-4).join(" ");
   return SCORE_WORDS.test(lastWords);
 }
 
@@ -281,6 +317,10 @@ function convertShorthandAmounts(text: string): string {
   let t = text;
   const amount = (w: string, f: string | undefined, unit: string) =>
     `${decimalToVietnamese(f ? `${w},${f}` : w)} ${unit}`;
+  // Ranges: "50-100k" → "năm mươi đến một trăm nghìn"
+  t = t.replace(/(?<![\d.,])(\d+(?:,\d+)?)\s*[-–]\s*(\d+(?:,\d+)?)\s*(k|tr)(?![a-zà-ỹ\d])/g, (_m, a, b, u) =>
+    `${decimalToVietnamese(a)} đến ${decimalToVietnamese(b)} ${u === "k" ? "nghìn" : "triệu"}`
+  );
   // Lowercase only ("4K" is a resolution) and never glued to more digits
   // ("2k6", "5tr5" are slang we leave untouched).
   t = t.replace(/(?<![\d.,])(\d+)(?:[.,](\d+))?\s*tr(?![a-zà-ỹ\d])/g, (_m, w, f) => amount(w, f, "triệu"));
@@ -349,15 +389,18 @@ const UNIT_MAP: Record<string, string> = {
 function convertUnits(text: string): string {
   // Height shorthand: "1m75" → "một mét bảy mươi lăm"
   let t = text.replace(/(?<![\d,])(\d)m(\d{2})(?![\d\p{L}])/gu, (_m, a, b) =>
-    `${numberToVietnamese(a)} mét ${numberToVietnamese(b)}`
+    `${numberToVietnamese(a)} mét ${b[0] === "0" ? "lẻ " + DIGITS[b[1]] : numberToVietnamese(b)}`
   );
   const units = Object.keys(UNIT_MAP).sort((a, b) => b.length - a.length);
   for (const unit of units) {
     const escaped = unit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // Never inside a dollar amount ("$5m" is five million dollars).
+    const lead = "(?<!\\$\\s*[\\d,]*)";
     const pattern = unit.length === 1
-      ? `(\\d+)\\s*${escaped}(?!\\s*[a-zA-Zà-ỹ])(?=\\s*[^a-zA-Zà-ỹ]|$)`
-      : `(\\d+)\\s*${escaped}(?=\\s|[^\\w]|$)`;
-    const regex = new RegExp(pattern, "gi");
+      ? `${lead}(\\d+)\\s*${escaped}(?!\\s*[a-zA-Zà-ỹ])(?=\\s*[^a-zA-Zà-ỹ]|$)`
+      : `${lead}(\\d+)\\s*${escaped}(?=\\s|[^\\w]|$)`;
+    // Single-letter units are lowercase only: "5G"/"4G" are networks, not grams.
+    const regex = new RegExp(pattern, unit.length === 1 ? "g" : "gi");
     t = t.replace(regex, (_m, num) => num + " " + UNIT_MAP[unit]);
   }
   return t;
