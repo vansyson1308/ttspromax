@@ -217,7 +217,7 @@ export default function Home() {
 
   const initOnnxWorker = useCallback(
     async (modelName: string) => {
-      if (modelLoaded === modelName) return;
+      if (modelLoaded === modelName && workerRef.current) return;
       setModelLoading(true);
       workerRef.current?.terminate();
       workerRef.current = null;
@@ -326,23 +326,31 @@ export default function Home() {
         blob = await new Promise<Blob>((resolve, reject) => {
           const chunks: Blob[] = [];
           // The worker can't be interrupted mid-inference: stop = terminate it.
-          abort.signal.addEventListener("abort", () => {
+          // The listener is removed once this generation settles, so a later
+          // Generate (which aborts the previous controller) can't kill the
+          // cached worker.
+          const onAbort = () => {
+            worker.removeEventListener("message", onMessage);
             worker.terminate();
             workerRef.current = null;
             setModelLoaded(null);
             reject(new DOMException("Stopped", "AbortError"));
-          });
+          };
+          const settle = () => abort.signal.removeEventListener("abort", onAbort);
           const onMessage = (e: MessageEvent) => {
             const { status } = e.data;
             if (status === "stream") chunks.push(e.data.chunk.audio);
             else if (status === "complete") {
               worker.removeEventListener("message", onMessage);
+              settle();
               resolve(e.data.audio || new Blob(chunks, { type: "audio/wav" }));
             } else if (status === "error") {
               worker.removeEventListener("message", onMessage);
+              settle();
               reject(new Error(e.data.data || "Generation failed"));
             }
           };
+          abort.signal.addEventListener("abort", onAbort, { once: true });
           worker.addEventListener("message", onMessage);
           worker.postMessage({ type: "generate", text: prepared, voice: 0, speed: 1 + settings.rate / 100 });
         });
