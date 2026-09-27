@@ -5,20 +5,56 @@
  */
 
 import { z } from "zod";
+import { LEGACY_MAX_CHARS, TTS_MAX_CHARS } from "@/lib/speech/limits";
+
+export { TTS_MAX_CHARS };
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
+export const lexiconEntrySchema = z.object({
+  from: z.string().min(1).max(80),
+  to: z.string().min(1).max(200),
+  caseSensitive: z.boolean().optional(),
+});
+
 export const ttsSchema = z.object({
-  text: z.string().min(1, "Text is required").max(5000, "Text too long (max 5000)"),
+  text: z.string().min(1, "Text is required").max(TTS_MAX_CHARS, `Text too long (max ${TTS_MAX_CHARS})`),
   id: z.number().int().positive(),
+  style: z.enum(["natural", "news", "story", "podcast", "ads"]).optional(),
+  /** Speaking-rate offset in %. */
+  rate: z.number().min(-50).max(100).optional(),
+  /** Pitch offset in Hz. */
+  pitch: z.number().min(-50).max(50).optional(),
+  /** Multiplier for automatic pauses. */
+  pauseScale: z.number().min(0.3).max(3).optional(),
+  /** Insert breath pauses in long clauses. */
+  phrasing: z.boolean().optional(),
+  /** Force text language instead of auto-detect. */
+  lang: z.enum(["vi", "en"]).optional(),
+  /** User pronunciation dictionary. */
+  lexicon: z.array(lexiconEntrySchema).max(500).optional(),
 });
 export type TtsBody = z.infer<typeof ttsSchema>;
 
 export const makevoiceSchema = z.object({
   voice_id: z.string().min(1),
-  text: z.string().min(1).max(5000),
+  text: z.string().min(1).max(LEGACY_MAX_CHARS),
   model_id: z.string().optional(),
+  lexicon: z.array(lexiconEntrySchema).max(500).optional(),
 });
+
+export const geminiTtsSchema = z.object({
+  text: z.string().min(1).max(TTS_MAX_CHARS),
+  /** Prebuilt Gemini voice name, e.g. "Kore". */
+  voice: z.string().min(1).max(40).regex(/^[A-Za-z]+$/),
+  style: z.enum(["natural", "news", "story", "podcast", "ads"]).optional(),
+  /** Extra free-text direction appended to the style prompt. */
+  direction: z.string().max(300).optional(),
+  pauseScale: z.number().min(0.3).max(3).optional(),
+  lang: z.enum(["vi", "en"]).optional(),
+  lexicon: z.array(lexiconEntrySchema).max(500).optional(),
+});
+export type GeminiTtsBody = z.infer<typeof geminiTtsSchema>;
 export type MakevoiceBody = z.infer<typeof makevoiceSchema>;
 
 export const tiktokTtsSchema = z.object({

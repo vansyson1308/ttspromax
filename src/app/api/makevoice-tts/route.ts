@@ -4,6 +4,9 @@ export const maxDuration = 60;
 import { NextRequest } from "next/server";
 import { parseBody, makevoiceSchema } from "@/lib/api-validators";
 import { logger } from "@/lib/logger";
+import { builtinLexicon } from "@/lib/speech/lexicon";
+import { prepareSpoken } from "@/lib/speech/planner";
+import { mapPauseTags } from "@/lib/speech/segmenter";
 
 const MAKEVOICE_API = "https://makevoice.io/api";
 const log = logger.child("api/makevoice-tts");
@@ -68,11 +71,13 @@ function selectModel(text: string, preferredModel?: string, preferredModelId?: s
 export async function POST(request: NextRequest) {
   const parsed = await parseBody(request, makevoiceSchema);
   if (!parsed.ok) return parsed.response;
-  const { voice_id, text, model_id } = parsed.data;
+  const { voice_id, text: rawText, model_id, lexicon = [] } = parsed.data;
 
   try {
     // Select model with auto-detection
-    const selectedModel = selectModel(text, undefined, model_id);
+    const selectedModel = selectModel(rawText, undefined, model_id);
+    const lang = detectLanguage(rawText) === "vi" ? "vi" : "en";
+    const text = prepareForElevenLabs(rawText, lang, [...lexicon, ...builtinLexicon(lang)]);
 
     // Forward request to MakeVoice.io API
     // Use 'model' parameter (MakeVoice.io accepts both 'model' and 'model_id')
@@ -147,6 +152,35 @@ export async function POST(request: NextRequest) {
       500
     );
   }
+}
+
+/**
+ * Apply the lexicon + Vietnamese normalisation (ElevenLabs' v2.5 models do not
+ * normalise Vietnamese numbers) and turn [pause] tags into ElevenLabs
+ * `<break time="…s" />` tags (max 3 s each).
+ */
+function prepareForElevenLabs(
+  text: string,
+  lang: "vi" | "en",
+  lexicon: Parameters<typeof prepareSpoken>[2],
+): string {
+  const MARK = "\uE010";
+  const pauses: number[] = [];
+  // Paragraph breaks become explicit pauses (normalisation collapses newlines).
+  const withParagraphs = text.replace(/\n\s*\n+/g, " [pause 800ms] ");
+  const marked = mapPauseTags(withParagraphs, (ms) => {
+    pauses.push(ms);
+    return MARK;
+  });
+  return marked
+    .split(MARK)
+    .map((piece) => (piece.trim() ? prepareSpoken(piece, lang, lexicon, false) : ""))
+    .reduce((acc, piece, i) => {
+      if (i === 0) return piece;
+      const secs = Math.min(3, Math.max(0.1, pauses[i - 1] / 1000)).toFixed(1);
+      return `${acc} <break time="${secs}s" /> ${piece}`;
+    }, "")
+    .trim();
 }
 
 function jsonResponse(data: Record<string, unknown>, status = 200) {
