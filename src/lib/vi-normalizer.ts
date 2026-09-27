@@ -419,7 +419,15 @@ function classifyPair(a: string, b: string, before: string, after: string, liste
   // Leave ascending money ranges for convertCurrency ("300-500đ", "5-10 USD").
   if (x < y && CURRENCY_AFTER.test(after)) return "keep";
   const partner = after.match(/^\s*(?:và|,|đến|tới|hoặc)\s*(\d{1,2})-(\d{1,2})(?![-\d])/i);
-  if (validDate && partner && parseInt(partner[1]) >= parseInt(partner[2]) && parseInt(partner[2]) <= 12) return "date";
+  // …the partner is unambiguous (day ≥ month) or the same month later on
+  // ("từ 1-9 đến 3-9").
+  if (
+    validDate &&
+    partner &&
+    parseInt(partner[2]) <= 12 &&
+    (parseInt(partner[1]) >= parseInt(partner[2]) || (partner[2] === b && parseInt(partner[1]) > x))
+  )
+    return "date";
   // Ranges ascend; "Đêm 31-12 người dân…" is still a date.
   // …except on scales and levels: "Thang điểm từ 1-5.", "lớp từ 1-5".
   // (only when the scale word is right before "từ": "Mức lương tăng từ 1-7" is a date)
@@ -427,7 +435,9 @@ function classifyPair(a: string, b: string, before: string, after: string, liste
   // "Thang điểm đánh giá từ 1-5", "Cấp độ rủi ro thiên tai từ 1-5".
   const scale =
     /(?<!\p{L})(?:điểm|thang|số|lớp|mức|cấp|hạng)(?:\s+\p{L}+)?\s+từ\s*$/iu.test(before) ||
-    /(?<!\p{L})(?:(?:mức|cấp)\s+độ|thang\s+(?:điểm|đo)|đánh giá|chấm)(?!\p{L})[^,;.!?]*?\s+từ\s*$/iu.test(before);
+    (/(?<!\p{L})(?:(?:mức|cấp)\s+độ|thang\s+(?:điểm|đo)|đánh giá|chấm(?!\s+(?:dứt|công|thi|phúc)))(?:\s+\p{L}+){0,4}\s+từ\s*$/iu.test(before) &&
+      // …but "… áp dụng/có hiệu lực/tăng từ 1-7" is a start date.
+      !/(?<!\p{L})(?:áp dụng|hiệu lực|diễn ra|bắt đầu|triển khai|thực hiện|công bố|vận hành|hoạt động|làm việc|điều chỉnh|tăng|giảm|mở rộng|nâng lên)\s+từ\s*$/iu.test(before));
   if (validDate && !scale && EVENT_OR_FROM_BEFORE.test(before) && DATE_TAIL.test(after)) return "date";
   if (x < y && COUNTER_AFTER.test(after)) return "range";
   if (validDate && EVENT_BEFORE.test(before)) return "date";
@@ -439,7 +449,14 @@ function classifyPair(a: string, b: string, before: string, after: string, liste
     // "vào/từ/trước 5-5" is always a date; "sau/đến 1-1" can be a
     // running score in a sports clause ("Sau 1-1 ở hiệp một").
     const firmLead = /(?<!\p{L})(?:từ|trước|vào|kể từ|tính từ)\s*$/iu.test(before) || /^\s*đến nay/iu.test(after);
-    const softLead = /(?<!\p{L})(?:sau|đến)\s*$/iu.test(before) && !SPORTS_CUE.test(clause);
+    // (ignoring look-alike compounds: đội ngũ, tuyển sinh, lượt khách, trận lũ…)
+    const sportsClause = SPORTS_CUE.test(
+      clause.replace(
+        /(?<!\p{L})(?:đội\s+(?:ngũ|tình nguyện|xe|thi công|quản lý|cảnh sát)|tuyển\s+(?:sinh|dụng)|đấu\s+(?:giá|thầu)|lượt\s+(?:khách|xe|truy cập)|trận\s+(?:lũ|mưa|bão)|hiệp\s+hội)(?!\p{L})/giu,
+        "",
+      ),
+    );
+    const softLead = /(?<!\p{L})(?:sau|đến)\s*$/iu.test(before) && !sportsClause;
     return validDate && (firmLead || softLead) ? "date" : "score";
   }
   // Day ≥ month can't be an ascending range: "30-4", "10-10".
