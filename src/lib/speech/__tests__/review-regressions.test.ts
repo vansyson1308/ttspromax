@@ -7,8 +7,8 @@ import { splitCue } from "../subtitles";
 
 describe("vi-normalizer review regressions", () => {
   it("reads hyphen holiday dates", () => {
-    expect(vi("ngày 30-4 và 1-5")).toBe("ngày ba mươi tháng bốn và một tháng năm");
-    expect(vi("Đại lễ 30-4")).toBe("Đại lễ ba mươi tháng bốn");
+    expect(vi("ngày 30-4 và 1-5")).toBe("ngày ba mươi tháng tư và một tháng năm");
+    expect(vi("Đại lễ 30-4")).toBe("Đại lễ ba mươi tháng tư");
   });
   it("reads scores as scores", () => {
     expect(vi("thắng 2-1")).toBe("thắng hai một");
