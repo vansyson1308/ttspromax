@@ -94,7 +94,6 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<RenderResult | null>(null);
-  const [currentMs, setCurrentMs] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -252,37 +251,8 @@ export default function Home() {
     [avatarEnabled],
   );
 
-  // Smooth karaoke clock while playing.
-  useEffect(() => {
-    const el = audioRef.current;
-    if (!el) return;
-    let raf = 0;
-    const tick = () => {
-      setCurrentMs(el.currentTime * 1000);
-      if (!el.paused) raf = requestAnimationFrame(tick);
-    };
-    const onPlay = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(tick);
-    };
-    const onSeek = () => setCurrentMs(el.currentTime * 1000);
-    el.addEventListener("play", onPlay);
-    el.addEventListener("seeked", onSeek);
-    el.addEventListener("pause", onSeek);
-    return () => {
-      cancelAnimationFrame(raf);
-      el.removeEventListener("play", onPlay);
-      el.removeEventListener("seeked", onSeek);
-      el.removeEventListener("pause", onSeek);
-    };
-  }, [result]);
-
-  const seek = (ms: number) => {
-    const el = audioRef.current;
-    if (!el) return;
-    el.currentTime = ms / 1000;
-    el.play().catch(() => {});
-  };
+  // Cancel an in-flight render if the page unmounts.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const handlePitchChange = useCallback((val: number) => {
     setPitchSemitones(val);
@@ -327,7 +297,6 @@ export default function Home() {
     setProgress(null);
     if (result) URL.revokeObjectURL(result.url);
     setResult(null);
-    setCurrentMs(0);
 
     try {
       let blob: Blob;
@@ -662,6 +631,15 @@ export default function Home() {
           </span>
         </button>
 
+        {isGenerating && (
+          <button
+            onClick={() => abortRef.current?.abort()}
+            className="mt-2 w-full text-xs font-bold text-gray-500 hover:text-red-500"
+          >
+            ■ {tr("Dừng", "Stop")}
+          </button>
+        )}
+
         <div className="mt-4 flex items-center justify-between">
           <AvatarToggle enabled={avatarEnabled} onChange={setAvatarEnabled} />
           {avatarEnabled && (
@@ -681,7 +659,7 @@ export default function Home() {
           <div className="mt-6 bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-3">
             <audio ref={audioRef} controls className="w-full" src={result.url} />
             {result.cues.length > 0 && !avatarEnabled && (
-              <Transcript cues={result.cues} currentMs={currentMs} onSeek={seek} />
+              <Transcript cues={result.cues} audioRef={audioRef} />
             )}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs text-gray-400">
