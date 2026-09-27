@@ -104,100 +104,99 @@ export const EN_BUILTIN_LEXICON: LexiconEntry[] = [
   { from: "approx.", to: "approximately", caseSensitive: false },
 ];
 
-const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-/** Case-insensitive pattern for one literal, without a global `i` flag. */
-function caseless(s: string): string {
-  return [...s]
-    .map((ch) => {
-      const lo = ch.toLowerCase();
-      const up = ch.toUpperCase();
-      if (lo === up || lo.length !== 1 || up.length !== 1) return escapeRegex(ch);
-      // Include the character itself: titlecase letters ("ǅ") differ from both.
-      return `[${[...new Set([ch, lo, up])].join("")}]`;
-    })
-    .join("");
-}
-
 function isAcronym(s: string): boolean {
   return /\p{Lu}/u.test(s) && s === s.toUpperCase();
 }
 
-/** Replacement plus its position in the entry list (lower = higher priority). */
-interface Target {
+const isWordChar = (ch: string | undefined) => !!ch && /[\p{L}\p{N}]/u.test(ch);
+
+interface Candidate {
+  from: string;
+  /** Lower-cased form for case-insensitive comparison. */
+  lower: string;
   to: string;
+  cs: boolean;
+  /** Needs a token boundary after it (ends in a letter/digit). */
+  endsWord: boolean;
+  /** Position in the entry list — lower wins ties (user entries first). */
   order: number;
 }
 
-interface Matcher {
-  re: RegExp;
-  /** Case-sensitive entries, keyed by exact written form. */
-  exact: Map<string, Target>;
-  /** Case-insensitive entries, keyed by lower-cased written form. */
-  folded: Map<string, Target>;
-}
-
 /**
- * Compile all entries into ONE alternation regex (longest first, so
- * "TP.HCM" wins over "TP." and "GS.TS" over "GS."). A single pass keeps
- * 500+ entries cheap enough to re-run on every keystroke for the preview.
+ * Index entries by their first character (lower-cased). Matching then only
+ * compares the handful of entries that start with the character at a token
+ * boundary — no giant alternation regex, so 500 entries compile in well
+ * under a millisecond and the preview stays responsive on phones.
  */
-function compile(entries: LexiconEntry[]): Matcher | null {
-  const exact = new Map<string, Target>();
-  const folded = new Map<string, Target>();
-  const forms: Array<{ from: string; cs: boolean }> = [];
+function compile(entries: LexiconEntry[]): Map<string, Candidate[]> | null {
+  const byFirst = new Map<string, Candidate[]>();
+  const seen = new Set<string>();
   entries.forEach((e, order) => {
     // Spoken text is NFC; entries typed/pasted in NFD must still match.
     const from = e.from.normalize("NFC").trim();
     const to = e.to.normalize("NFC").trim();
     if (!from || !to) return;
     const cs = e.caseSensitive ?? isAcronym(from);
-    const map = cs ? exact : folded;
-    const key = cs ? from : from.toLowerCase();
-    if (map.has(key)) return; // earlier entries (the user's) win
-    map.set(key, { to, order });
-    forms.push({ from, cs });
+    const key = `${cs ? "s" : "i"}:${cs ? from : from.toLowerCase()}`;
+    if (seen.has(key)) return; // earlier entries (the user's) win
+    seen.add(key);
+    const first = from[0].toLowerCase();
+    const list = byFirst.get(first) ?? [];
+    list.push({ from, lower: from.toLowerCase(), to, cs, endsWord: isWordChar(from[from.length - 1]), order });
+    byFirst.set(first, list);
   });
-  if (!forms.length) return null;
-  // No global `i` flag: case-insensitive entries get per-letter classes, so
-  // every regex match is a real entry and shorter entries still get a turn
-  // when a longer case-sensitive one differs in case ("Tp HCM").
-  const alternatives = forms
-    .sort((a, b) => b.from.length - a.from.length)
-    .map(({ from, cs }) => {
-      // Token boundary after entries ending in a letter/digit; entries ending
-      // in punctuation (e.g. "TP.") already carry their boundary.
-      const tail = /[\p{L}\p{N}]$/u.test(from) ? "(?![\\p{L}\\p{N}])" : "";
-      return (cs ? escapeRegex(from) : caseless(from)) + tail;
-    });
-  const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives.join("|")})`, "gu");
-  return { re, exact, folded };
+  if (!byFirst.size) return null;
+  // Longest first ("TP.HCM" before "TP."), then entry order.
+  for (const list of byFirst.values()) list.sort((x, y) => y.from.length - x.from.length || x.order - y.order);
+  return byFirst;
 }
 
-const compiledCache = new WeakMap<LexiconEntry[], Matcher | null>();
+const compiledCache = new WeakMap<LexiconEntry[], Map<string, Candidate[]> | null>();
 
-function compiled(entries: LexiconEntry[]): Matcher | null {
+function compiled(entries: LexiconEntry[]) {
   if (!compiledCache.has(entries)) compiledCache.set(entries, compile(entries));
   return compiledCache.get(entries) ?? null;
 }
 
+function matchAt(text: string, i: number, list: Candidate[]): Candidate | null {
+  for (const c of list) {
+    const slice = text.slice(i, i + c.from.length);
+    if (slice.length !== c.from.length) continue;
+    if (c.cs ? slice !== c.from : slice.toLowerCase() !== c.lower) continue;
+    if (c.endsWord && isWordChar(text[i + c.from.length])) continue;
+    return c;
+  }
+  return null;
+}
+
 /**
- * Replace every lexicon match in one left-to-right pass. Output text is never
- * re-scanned, so an expansion can't be rewritten by another entry.
+ * Replace lexicon entries in one left-to-right pass at token starts. Output
+ * text is never re-scanned, so an expansion can't be rewritten by another
+ * entry. Case-sensitive and -insensitive entries compete on length, then on
+ * entry order, so a user's override beats a built-in for the same word and a
+ * longer entry that differs in case ("TP HCM" vs "Tp HCM") falls back to a
+ * shorter one ("HCM").
  */
 export function applyLexicon(text: string, entries: LexiconEntry[]): string {
-  const m = entries.length ? compiled(entries) : null;
-  if (!m) return text;
-  return text.replace(m.re, (match: string, offset: number, full: string) => {
-    // Both maps may hold the word (e.g. a user's case-insensitive "AI" and
-    // the built-in case-sensitive "AI"); the earlier entry — the user's — wins.
-    const candidates = [m.exact.get(match), m.folded.get(match.toLowerCase())].filter(Boolean) as Target[];
-    if (!candidates.length) return match;
-    const to = candidates.sort((a, b) => a.order - b.order)[0].to;
+  const index = entries.length ? compiled(entries) : null;
+  if (!index) return text;
+  let out = "";
+  let last = 0;
+  let i = 0;
+  while (i < text.length) {
+    const list = !isWordChar(text[i - 1]) ? index.get(text[i].toLowerCase()) : undefined;
+    const hit = list ? matchAt(text, i, list) : null;
+    if (!hit) {
+      i++;
+      continue;
+    }
+    const end = i + hit.from.length;
     // "TP.Hà Nội" → "thành phố Hà Nội": re-insert the space the dot stood in for.
-    const next = full[offset + match.length] ?? "";
-    return /[^\p{L}\p{N}]$/u.test(match) && /[\p{L}\p{N}]/u.test(next) ? `${to} ` : to;
-  });
+    const glue = !hit.endsWord && isWordChar(text[end]) ? " " : "";
+    out += text.slice(last, i) + hit.to + glue;
+    last = i = end;
+  }
+  return out + text.slice(last);
 }
 
 const formsCache = new WeakMap<LexiconEntry[], Set<string>>();
