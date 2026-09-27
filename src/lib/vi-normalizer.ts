@@ -423,16 +423,24 @@ function classifyPair(a: string, b: string, before: string, after: string, liste
   // Ranges ascend; "Đêm 31-12 người dân…" is still a date.
   // …except on scales and levels: "Thang điểm từ 1-5.", "lớp từ 1-5".
   // (only when the scale word is right before "từ": "Mức lương tăng từ 1-7" is a date)
-  const scale = /(?<!\p{L})(?:điểm|thang|số|lớp|mức|cấp|hạng)(?:\s+\p{L}+)?\s+từ\s*$/iu.test(before);
+  // Rating scales name their dimension first: "Mức độ hài lòng từ 1-5",
+  // "Thang điểm đánh giá từ 1-5", "Cấp độ rủi ro thiên tai từ 1-5".
+  const scale =
+    /(?<!\p{L})(?:điểm|thang|số|lớp|mức|cấp|hạng)(?:\s+\p{L}+)?\s+từ\s*$/iu.test(before) ||
+    /(?<!\p{L})(?:(?:mức|cấp)\s+độ|thang\s+(?:điểm|đo)|đánh giá|chấm)(?!\p{L})[^,;.!?]*?\s+từ\s*$/iu.test(before);
   if (validDate && !scale && EVENT_OR_FROM_BEFORE.test(before) && DATE_TAIL.test(after)) return "date";
   if (x < y && COUNTER_AFTER.test(after)) return "range";
   if (validDate && EVENT_BEFORE.test(before)) return "date";
   // Small equal pairs are draws ("Man City 1-1 Arsenal"), not dates —
-  // unless a time preposition or bracket leads in ("Từ 1-1 đến nay",
-  // "Hôm nay (1-1),") or "đến nay" follows.
+  // unless a time preposition leads in ("Từ 1-1 đến nay", "Sau 1-1,") or
+  // "đến nay" follows, outside a sports clause ("Sau 1-1 ở hiệp một").
   if (x === y && x < 10) {
-    const timeLead = /(?:(?<!\p{L})(?:từ|trước|sau|vào|đến|kể từ|tính từ)|\()\s*$/iu.test(before) || /^\s*đến nay/iu.test(after);
-    return timeLead && validDate ? "date" : "score";
+    const clause = (before.split(/[,;.!?]/).pop() ?? "") + after.split(/[,;.!?]/)[0];
+    // "vào/từ/trước 5-5" is always a date; "sau/đến 1-1" can be a
+    // running score in a sports clause ("Sau 1-1 ở hiệp một").
+    const firmLead = /(?<!\p{L})(?:từ|trước|vào|kể từ|tính từ)\s*$/iu.test(before) || /^\s*đến nay/iu.test(after);
+    const softLead = /(?<!\p{L})(?:sau|đến)\s*$/iu.test(before) && !SPORTS_CUE.test(clause);
+    return validDate && (firmLead || softLead) ? "date" : "score";
   }
   // Day ≥ month can't be an ascending range: "30-4", "10-10".
   if (validDate && x >= y) return "date";
