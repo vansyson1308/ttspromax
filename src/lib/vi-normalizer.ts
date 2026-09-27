@@ -186,6 +186,18 @@ function convertDates(text: string): string {
 
   const dayWords = (d: string, m: string) => `${numberToVietnamese(d)} tháng ${monthToVietnamese(m)}`;
 
+  // Date ranges: "30/4-1/5" and "2-3/5" (days 2 to 3 of May).
+  t = t.replace(/(?<![\d.,/])(\d{1,2})\/(\d{1,2})\s*[-–]\s*(\d{1,2})\/(\d{1,2})(?![/\d])/g, (m, d1, m1, d2, m2) =>
+    isValidDay(parseInt(d1), parseInt(m1)) && isValidDay(parseInt(d2), parseInt(m2))
+      ? `${dayWords(d1, m1)} đến ${dayWords(d2, m2)}`
+      : m
+  );
+  t = t.replace(/(?<![\d.,/-])(\d{1,2})\s*[-–]\s*(\d{1,2})\/(\d{1,2})(?![/\d])/g, (m, d1, d2, mo) =>
+    parseInt(d1) < parseInt(d2) && isValidDay(parseInt(d2), parseInt(mo))
+      ? `${numberToVietnamese(d1)} đến ${dayWords(d2, mo)}`
+      : m
+  );
+
   // DD/MM/YYYY — don't repeat "ngày" when the text already says it.
   t = t.replace(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})/g, (_m, d, m, y, offset, full) => {
     if (!isValidDay(parseInt(d), parseInt(m))) return _m;
@@ -209,7 +221,8 @@ function convertDates(text: string): string {
   // ("ngày 2-9", "Chiều 5-6"), when listed with another date ("30-4 và
   // 1-5", "từ 1-5 đến 10-5"), or when day > month outside a score context;
   // otherwise "2-3 ngày" is a range and "2-1" a score.
-  t = t.replace(/(?<![\d.,-])(\d{1,2})([/-])(\d{1,2})(?![/-]?\d)/g, (_m, d, sep, m, offset, full) => {
+  // (Not after "7h": "7h30-9h" is an hour range handled by convertTimes.)
+  t = t.replace(/(?<![\d.,-]|\dh)(\d{1,2})([/-])(\d{1,2})(?![/-]?\d)/g, (_m, d, sep, m, offset, full) => {
     const after = full.slice(offset + _m.length);
     const before = full.slice(0, offset);
     if (/^\s*%/.test(after)) return _m;
@@ -236,8 +249,12 @@ function convertDates(text: string): string {
       // "từ 1-5 đến 10-5": the partner must itself be unambiguous (day > month).
       const partner = after.match(/^\s*(?:và|,|đến|tới|hoặc)\s*(\d{1,2})-(\d{1,2})(?![-\d])/i);
       const listedBeforeDate = !!partner && parseInt(partner[1]) > parseInt(partner[2]);
-      const dayAfterMonth = parseInt(d) > parseInt(m) && !inScoreContext(before);
-      if (!afterKeyword && !listedAfterDate && !listedBeforeDate && !dayAfterMonth) return _m;
+      // "Nghỉ lễ 30-4 và 1-5": listed after an unambiguous date.
+      const prevPair = before.match(/(\d{1,2})-(\d{1,2})\s*(?:và|,|đến|tới|hoặc|-)\s*$/);
+      const listedAfterPlainDate =
+        !!prevPair && parseInt(prevPair[1]) > parseInt(prevPair[2]) && parseInt(prevPair[2]) <= 12;
+      const dayAfterMonth = parseInt(d) > parseInt(m) && !inScoreContext(before, d, m);
+      if (!afterKeyword && !listedAfterDate && !listedAfterPlainDate && !listedBeforeDate && !dayAfterMonth) return _m;
     }
     if (isValidDay(parseInt(d), parseInt(m))) return dayWords(d, m);
     return _m;
@@ -271,18 +288,28 @@ const DATE_KEYWORDS = "(?<!\\p{L})(?:ngày|hôm|mùng|mồng)";
 const TIME_OF_DAY = "(?<!\\p{L})(?:sáng|trưa|chiều|tối|đêm|khuya|rạng sáng)";
 const DATELINE_END = /^\s*(?:[,.;:!?)]|$|\p{Lu})/u;
 
-/**
- * Match-report vocabulary within the last few words: "thắng HAGL 2-1".
- * Whole words only and case-sensitive for the verbs, so names ("Hoàng",
- * "Khánh Hòa", "Hòa Phát") and compounds ("chiến thắng", "thắng lợi",
- * "thua lỗ", "hòa bình") don't count.
- */
+/** Match-report vocabulary: "thắng HAGL 2-1", "Thua 0-2", "tỷ số chung cuộc 3-0". */
 const SCORE_WORDS =
-  /(?<!\p{L})(?:[Tt][ỷỉ] số|chung cuộc|cách biệt|đánh bại|hạ gục|dẫn trước|(?<!chiến )thắng(?! lợi)|thua(?! lỗ)|(?:cầm |gỡ )?h(?:òa|oà)(?! (?:bình|giải|hợp|nhập|thuận|vốn)))(?!\p{L})/u;
+  /(?<!\p{L})(?:t[ỷỉ] số|chung cuộc|cách biệt|đánh bại|hạ gục|dẫn trước|chiến thắng|thắng(?! lợi)|thua(?! lỗ)|(?:cầm |gỡ )?h(?:òa|oà)(?! (?:bình|giải|hợp|nhập|thuận|vốn)))(?!\p{L})/giu;
 
-function inScoreContext(before: string): boolean {
-  const lastWords = before.trim().split(/\s+/).slice(-4).join(" ");
-  return SCORE_WORDS.test(lastWords);
+/**
+ * Is "a-b" a match score? Scores are small numbers, preceded within six
+ * words by a score word. A capitalised score word next to another
+ * capitalised word is a name ("Hòa Phát", "Khánh Hòa"), not a verb, and
+ * "Chiến thắng 30-4" (the anniversary) fails the small-number test.
+ */
+function inScoreContext(before: string, a: string, b: string): boolean {
+  if (parseFloat(a) >= 20 || parseFloat(b) >= 20) return false;
+  const window = before.trim().split(/\s+/).slice(-6).join(" ");
+  for (const m of window.matchAll(SCORE_WORDS)) {
+    if (/^\p{Lu}/u.test(m[0])) {
+      const prev = window.slice(0, m.index).trimEnd().split(" ").pop() ?? "";
+      const next = window.slice(m.index! + m[0].length).trimStart().split(" ")[0] ?? "";
+      if (/^\p{Lu}/u.test(prev) || /^\p{Lu}/u.test(next)) continue;
+    }
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -293,11 +320,11 @@ function inScoreContext(before: string): boolean {
  */
 function convertRanges(text: string): string {
   return text.replace(
-    /(?<![\d.,\-–—])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)(?![\d/%,]|\s*[-–—]\s*\d)/g,
+    /(?<![\d.,\-–—])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)(?![\d/%]|,\d|\s*[-–—]\s*\d)/g,
     (m, a, b, offset, full) => {
       const before = full.slice(0, offset);
       const integers = !a.includes(",") && !b.includes(",");
-      if (integers && inScoreContext(before)) return `${numberToVietnamese(a)} ${numberToVietnamese(b)}`;
+      if (integers && inScoreContext(before, a, b)) return `${numberToVietnamese(a)} ${numberToVietnamese(b)}`;
       if (/(?:số|mã|ký hiệu|kí hiệu|No\.?)\s*$/i.test(before)) return m;
       if (a.length > 6 || b.length > 6 || numericValue(a) >= numericValue(b)) return m;
       return `${decimalToVietnamese(a)} đến ${decimalToVietnamese(b)}`;
@@ -378,7 +405,7 @@ function convertPhoneNumbers(text: string): string {
 const UNIT_MAP: Record<string, string> = {
   m: "mét", cm: "xăng-ti-mét", mm: "mi-li-mét", km: "ki-lô-mét",
   kg: "ki-lô-gam", g: "gam", mg: "mi-li-gam",
-  ml: "mi-li-lít", l: "lít",
+  ml: "mi-li-lít", l: "lít", L: "lít",
   "m²": "mét vuông", m2: "mét vuông", "km²": "ki-lô-mét vuông", km2: "ki-lô-mét vuông",
   ha: "héc-ta", "m³": "mét khối", m3: "mét khối",
   "°C": "độ C", "°F": "độ F",
