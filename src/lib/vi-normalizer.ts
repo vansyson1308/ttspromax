@@ -219,58 +219,31 @@ function convertDates(text: string): string {
     if (mi < 1 || mi > 12) return _m;
     return `${kw ? kw.trimEnd() + " " : "tháng "}${monthToVietnamese(m)} năm ${numberToVietnamese(y)}`;
   });
-  // DD/MM. A slash is a date unless it reads as a rank ("thứ 3/10") or a
-  // ratio ("tỷ lệ 1/3"). A hyphen is a date after a date/time-of-day word
-  // ("ngày 2-9", "Chiều 5-6"), when listed with another date ("30-4 và
-  // 1-5", "từ 1-5 đến 10-5"), or when day > month outside a score context;
-  // otherwise "2-3 ngày" is a range and "2-1" a score.
-  // (Not inside times: "7h30-9h", "7H30-9H", "7:30-9:00" are hour ranges
-  // handled by convertTimes.)
-  t = t.replace(/(?<![\d.,:-]|\d[hH])(\d{1,2})([/-])(\d{1,2})(?![/-]?\d|:\d)/g, (_m, d, sep, m, offset, full) => {
+  // DD/MM (slash). A date unless it reads as a rank ("thứ 3/10") or a
+  // ratio ("tỷ lệ 1/3"). Hyphenated pairs ("30-4", "2-1", "2-3") are
+  // classified separately by convertNumberPairs.
+  t = t.replace(/(?<![\d.,:-])(\d{1,2})\/(\d{1,2})(?![/-]?\d|:\d)/g, (_m, d, m, offset, full) => {
     const after = full.slice(offset + _m.length);
     const before = full.slice(0, offset);
     if (/^\s*%/.test(after)) return _m;
-    if (sep === "/" && parseInt(d) < parseInt(m)) {
+    if (parseInt(d) < parseInt(m)) {
       if (/(?:thứ|hạng|xếp|top)\s*$/i.test(before)) return `${numberToVietnamese(d)} trên ${numberToVietnamese(m)}`;
       const approx = /(?:khoảng|gần|hơn)\s*$/i.test(before) && /^\s*\p{Ll}/u.test(after) && !/^\s*năm/.test(after);
       if (/(?:tỷ lệ|tỉ lệ|chiếm)\s*$/i.test(before) || approx)
         return `${numberToVietnamese(d)} phần ${numberToVietnamese(m)}`;
     }
-    if (sep === "-") {
-      // "tháng 3-4" → "tháng ba đến tháng tư"
-      if (/tháng\s*$/i.test(before)) {
-        const a = parseInt(d), b = parseInt(m);
-        if (a >= 1 && b <= 12 && a < b) return `${monthToVietnamese(d)} đến tháng ${monthToVietnamese(m)}`;
-        return _m;
-      }
-      const afterKeyword =
-        new RegExp(`${DATE_KEYWORDS}\\s*$`, "iu").test(before) ||
-        (new RegExp(`${TIME_OF_DAY}\\s*$`, "iu").test(before) && DATELINE_END.test(after));
-      // Scores ("thắng 3-1 và 2-1") are never dates unless a date word precedes.
-      if (!afterKeyword && inScoreContext(before, d, m, after)) return _m;
-      const listedAfterDate = new RegExp(
-        `${DATE_KEYWORDS}\\s*\\d{1,2}-\\d{1,2}\\s*(?:và|,|đến|tới|hoặc)\\s*$`,
-        "iu",
-      ).test(before);
-      // "từ 1-5 đến 10-5": the partner must itself be unambiguous (day > month).
-      const partner = after.match(/^\s*(?:và|,|đến|tới|hoặc)\s*(\d{1,2})-(\d{1,2})(?![-\d])/i);
-      const listedBeforeDate = !!partner && parseInt(partner[1]) > parseInt(partner[2]);
-      // "Nghỉ lễ 30-4 và 1-5": listed after an unambiguous date.
-      const prevPair = before.match(/(\d{1,2})-(\d{1,2})\s*(?:và|,|đến|tới|hoặc|-)\s*$/);
-      const listedAfterPlainDate =
-        !!prevPair && parseInt(prevPair[1]) > parseInt(prevPair[2]) && parseInt(prevPair[2]) <= 12;
-      const dayAfterMonth = parseInt(d) > parseInt(m);
-      if (!afterKeyword && !listedAfterDate && !listedAfterPlainDate && !listedBeforeDate && !dayAfterMonth) return _m;
-    }
     if (isValidDay(parseInt(d), parseInt(m))) return dayWords(d, m);
     return _m;
   });
-  // tháng X
-  t = t.replace(/tháng\s*(\d+)(?![\d,])/g, (_m, m) => {
+  return t;
+}
+
+/** Leftover "tháng 5", "ngày 12" → words (after hyphen pairs are classified). */
+function convertDayMonthWords(text: string): string {
+  let t = text.replace(/tháng\s*(\d+)(?![\d,])/g, (_m, m) => {
     const mi = parseInt(m);
     return mi >= 1 && mi <= 12 ? "tháng " + monthToVietnamese(m) : _m;
   });
-  // ngày X
   t = t.replace(/ngày\s*(\d+)/g, (_m, d) => {
     const di = parseInt(d);
     return di >= 1 && di <= 31 ? "ngày " + numberToVietnamese(d) : _m;
@@ -284,37 +257,70 @@ function convertYearRanges(text: string): string {
   );
 }
 
-/** Words that always make "D-M" a date: "ngày 2-9", "mùng 2-9". */
-const DATE_KEYWORDS = "(?<!\\p{L})(?:ngày|hôm|mùng|mồng)";
+// ─── Hyphenated number pairs ─────────────────────────────────────────────────
+//
+// "30-4" (date), "thắng 2-1" (score), "2-3 ngày" (range) and "số 12-2024"
+// (code) look identical. Each pair is classified ONCE, on the raw text, by
+// checking these signals in priority order (first match wins):
+//
+//   1. "tháng 3-4"                        → month range
+//   2. code prefix ("số", "mã")           → keep as written
+//   3. date word before ("ngày", "mùng")  → date
+//   4. listed right after a date/score    → same class ("30-4 và 1-5",
+//      ("và", ",", "đến", "-" between)       "thắng 3-1 và 2-1", "4-6, 3-6")
+//   5. time-of-day dateline ("Chiều 5-6,")→ date
+//   6. score word in the same clause      → score
+//   7. unambiguous date partner after     → date ("từ 1-5 đến 10-5")
+//   8. ascending + counting noun after    → range ("2-3 ngày")
+//   9. day > month, valid date            → date ("30-4")
+//  10. ascending                          → range
+//  11. otherwise                          → keep
+
+/** Words that make "D-M" a date: "ngày 2-9", "mùng 2-9". */
+const DATE_KEYWORDS = /(?<!\p{L})(?:ngày|hôm|mùng|mồng)\s*$/iu;
 /**
- * Time-of-day words start datelines ("Chiều 5-6, …") but also counts
- * ("Sáng 2-3 người", "khuya 2-3 giờ"): only a date when the pair is followed
- * by punctuation, the end, or a capitalised word.
+ * Time-of-day words start datelines ("Chiều 5-6, …", "Chiều 5-6 năm nay")
+ * but also counts ("Sáng 2-3 người"): a date only when the pair is followed
+ * by punctuation, the end, a capitalised word or "năm nay/ngoái/<year>".
  */
-const TIME_OF_DAY = "(?<!\\p{L})(?:sáng|trưa|chiều|tối|đêm|khuya|rạng sáng)";
-const DATELINE_END = /^\s*(?:[,.;:!?)]|$|\p{Lu})/u;
+const TIME_OF_DAY = /(?<!\p{L})(?:sáng|trưa|chiều|tối|đêm|khuya|rạng sáng)\s*$/iu;
+const DATELINE_END = /^\s*(?:[,.;:!?)]|$|\p{Lu}|năm\s+(?:nay|ngoái|\d))/u;
+const CODE_PREFIX = /(?<!t[ỷỉ]\s)(?:số|mã|ký hiệu|kí hiệu|No\.?)\s*$/iu;
+const LIST_CONNECTOR = /^\s*(?:và|,|đến|tới|hoặc|-)\s*$/i;
 
 /** Match-report vocabulary: "thắng HAGL 2-1", "Thua 0-2", "tỷ số chung cuộc 3-0". */
 const SCORE_WORDS =
-  /(?<!\p{L})(?:t[ỷỉ] số|chung cuộc|cách biệt|đánh bại|hạ gục|dẫn trước|chiến thắng|thắng(?! (?:lợi|lớn|thầu|cử|kiện))|thua(?! (?:lỗ|kiện))|(?:cầm |gỡ )?h(?:òa|oà)(?! (?:bình|giải|hợp|nhập|thuận|vốn)))(?!\p{L})/giu;
-
-/** Score words that are also given names / place names ("Hòa Phát", "Thắng"). */
-const NAME_CAPABLE = /^(?:h(?:òa|oà)|thắng)$/iu;
-
-/** A counting noun after the pair makes it a quantity: "2-3 ngày", "6-7 tấn". */
-const COUNTER_AFTER =
-  /^\s*(?:ngày|tuần|tháng|năm|quý|lần|trận|vòng|phiên|điểm|bàn|tấn|gói|vụ|nhiệm kỳ|người|triệu|tỷ|tỉ|nghìn|ngàn|giờ|tiếng|phút|giây|mét|ki-lô|xăng-ti|mi-li|héc-ta|lít|độ|con|cái|chiếc|căn|hộ|lượt|bước|tầng|suất|món|học sinh|doanh nghiệp|dự án)(?!\p{L})/iu;
+  /(?<!\p{L})(?:t[ỷỉ] số|chung cuộc|cách biệt|đánh bại|hạ gục|dẫn trước|chiến thắng|thắng(?! (?:lợi|thầu|kiện))|thua(?! (?:lỗ|kiện))|(?:cầm |gỡ )?h(?:òa|oà)(?! (?:bình|giải|hợp|nhập|thuận|vốn)))(?!\p{L})/giu;
 
 /**
- * Is "a-b" a match score? Needs a score word within the last six words of
- * the same clause (text after the last , ; : . ! ?) and no counting noun
- * after the pair. A capitalised "Hòa"/"Thắng" next to another capitalised
- * word is a name, and "chiến thắng" only takes small numbers, so
- * "Chiến thắng 30-4" (the anniversary) stays a date.
+ * Score words that double as names: "Hòa Phát", "Khánh Hòa", "Thắng",
+ * "Chiến thắng Điện Biên Phủ" (an event). Only these are skipped when
+ * capitalised next to another capitalised word.
+ */
+const NAME_CAPABLE = /^(?:h(?:òa|oà)|thắng|chiến thắng)$/iu;
+
+/** Counting nouns: "2-3 ngày", "6-7 tấn" are quantities. */
+const COUNTER_AFTER =
+  /^\s*(ngày|tuần|tháng|năm|quý|lần|trận|vòng|lượt|mùa|hiệp|phiên|điểm|bàn|tấn|gói|vụ|nhiệm kỳ|người|triệu|tỷ|tỉ|nghìn|ngàn|giờ|tiếng|phút|giây|mét|ki-lô|xăng-ti|mi-li|héc-ta|lít|độ|con|cái|chiếc|căn|hộ|bước|tầng|suất|món|học sinh|doanh nghiệp|dự án)(?!\p{L})/iu;
+/** Time/phase nouns that, followed by these, date the event instead: "3-0 năm 2018", "2-1 lượt đi". */
+const TIME_COUNTERS = /^(?:ngày|tuần|tháng|năm|quý|trận|vòng|lượt|mùa|hiệp)$/i;
+const TIME_DEIXIS = /^\s+(?:\d|ngoái|nay|này|trước|sau|tới|đi|về|lượt|ra quân|phụ|đầu|cuối|chót|bù giờ)(?!\p{L})/iu;
+
+function followedByCounter(after: string): boolean {
+  const m = after.match(COUNTER_AFTER);
+  if (!m) return false;
+  return !(TIME_COUNTERS.test(m[1]) && TIME_DEIXIS.test(after.slice(m[0].length)));
+}
+
+/**
+ * A score word within the last six words of the current clause (text after
+ * the last , ; . ! ? — a colon doesn't end it: "Tỷ số: 2-1"), with no
+ * counting noun after the pair. "chiến thắng" only takes small numbers so
+ * "chiến thắng 30-4" (the anniversary) stays a date.
  */
 function inScoreContext(before: string, a: string, b: string, after: string): boolean {
-  if (COUNTER_AFTER.test(after)) return false;
-  const clause = before.split(/[,;:.!?]/).pop() ?? "";
+  if (followedByCounter(after)) return false;
+  const clause = before.split(/[,;.!?]/).pop() ?? "";
   const window = clause.trim().split(/\s+/).slice(-6).join(" ");
   for (const m of window.matchAll(SCORE_WORDS)) {
     const word = m[0];
@@ -329,23 +335,58 @@ function inScoreContext(before: string, a: string, b: string, after: string): bo
   return false;
 }
 
+type PairClass = "months" | "keep" | "date" | "score" | "range";
+
+function classifyPair(a: string, b: string, before: string, after: string, listed: PairClass | null): PairClass {
+  if (a.includes(",") || b.includes(",")) return numericValue(a) < numericValue(b) ? "range" : "keep";
+  const x = parseInt(a, 10);
+  const y = parseInt(b, 10);
+  const validDate = x >= 1 && x <= 31 && y >= 1 && y <= 12;
+  if (/tháng\s*$/i.test(before)) return x >= 1 && x < y && y <= 12 ? "months" : "keep";
+  if (CODE_PREFIX.test(before)) return "keep";
+  if (validDate && DATE_KEYWORDS.test(before)) return "date";
+  if (listed === "score") return "score";
+  if (listed === "date" && validDate) return "date";
+  if (validDate && TIME_OF_DAY.test(before) && DATELINE_END.test(after)) return "date";
+  if (inScoreContext(before, a, b, after)) return "score";
+  const partner = after.match(/^\s*(?:và|,|đến|tới|hoặc)\s*(\d{1,2})-(\d{1,2})(?![-\d])/i);
+  if (validDate && partner && parseInt(partner[1]) > parseInt(partner[2]) && parseInt(partner[2]) <= 12) return "date";
+  // Ranges ascend; "Đêm 31-12 người dân…" is still a date.
+  if (x < y && followedByCounter(after)) return "range";
+  if (validDate && x > y) return "date";
+  if (x < y && a.length <= 6 && b.length <= 6) return "range";
+  return "keep";
+}
+
 /**
- * Hyphenated number pairs, after dates/percentages:
- *   "thắng 2-1" → "thắng hai một" (score)
- *   "2-3 ngày", "10–15 người" → "hai đến ba ngày" (ascending range)
- * Codes and chains ("số 12-2024", "123-456-789") are left alone.
+ * Hyphenated number pairs (runs after units, times and slash dates; before
+ * percentages/shorthand, which handle their own ranges). Chains
+ * ("123-456-789"), times ("7:30-9:00") and percent/k/tr ranges are skipped.
  */
-function convertRanges(text: string): string {
+function convertNumberPairs(text: string): string {
+  let lastClass: PairClass | null = null;
+  let lastEnd = -1;
   return text.replace(
-    /(?<![\d.,\-–—])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)(?![\d/%]|,\d|\s*[-–—]\s*\d)/g,
+    /(?<![\d.,:\-–—/]|\d[hH])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)(?![\d/%]|,\d|:\d|\s*[-–—]\s*\d|\s*%|\s*(?:k|tr)(?![\p{L}\d]))/gu,
     (m, a, b, offset, full) => {
       const before = full.slice(0, offset);
       const after = full.slice(offset + m.length);
-      const integers = !a.includes(",") && !b.includes(",");
-      if (integers && inScoreContext(before, a, b, after)) return `${numberToVietnamese(a)} ${numberToVietnamese(b)}`;
-      if (/(?:số|mã|ký hiệu|kí hiệu|No\.?)\s*$/i.test(before)) return m;
-      if (a.length > 6 || b.length > 6 || numericValue(a) >= numericValue(b)) return m;
-      return `${decimalToVietnamese(a)} đến ${decimalToVietnamese(b)}`;
+      const listed = lastEnd >= 0 && LIST_CONNECTOR.test(full.slice(lastEnd, offset)) ? lastClass : null;
+      const cls = classifyPair(a, b, before, after, listed);
+      lastClass = cls;
+      lastEnd = offset + m.length;
+      switch (cls) {
+        case "months":
+          return `${monthToVietnamese(a)} đến tháng ${monthToVietnamese(b)}`;
+        case "date":
+          return `${numberToVietnamese(a)} tháng ${monthToVietnamese(b)}`;
+        case "score":
+          return `${numberToVietnamese(a)} ${numberToVietnamese(b)}`;
+        case "range":
+          return `${decimalToVietnamese(a)} đến ${decimalToVietnamese(b)}`;
+        default:
+          return m;
+      }
     },
   );
 }
@@ -512,13 +553,14 @@ export function normalizeVietnameseText(text: string): string {
   t = removeThousandsSeparators(t); // 100.000 → 100000
   t = convertGroupedPhoneNumbers(t); // 0912-345-678 → digit by digit
   t = convertYearRanges(t);         // 2020-2025 → hai nghìn hai mươi đến...
-  t = convertDates(t);              // 22/1/2024 → ngày hai mươi hai tháng một...
-  t = convertTimes(t);              // 14:30 → mười bốn giờ ba mươi
+  t = convertTimes(t);              // 14:30, 7h30-9h → mười bốn giờ ba mươi …
   t = convertUnits(t);              // 5km → 5 ki-lô-mét (number read later, so ranges/decimals keep the unit)
+  t = convertDates(t);              // 22/1/2024, 30/4, 2-3/5 → ngày hai mươi hai tháng một…
+  t = convertNumberPairs(t);        // 30-4 / thắng 2-1 / 2-3 ngày → date / score / range
+  t = convertDayMonthWords(t);      // tháng 5, ngày 12 → words
   t = convertCurrency(t);           // 100.000đ → một trăm nghìn đồng
   t = convertShorthandAmounts(t);   // 50k → năm mươi nghìn, 5tr → năm triệu
   t = convertPercentages(t);        // 15% → mười lăm phần trăm
-  t = convertRanges(t);             // 2-3 ngày → hai đến ba ngày
   t = convertRomanNumerals(t);      // thế kỷ XXI → thế kỷ hai mươi mốt
   t = convertPhoneNumbers(t);       // 0912345678 → không chín một hai...
   t = convertDecimals(t);           // 3,5 → ba phẩy năm
