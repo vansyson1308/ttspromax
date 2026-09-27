@@ -110,57 +110,68 @@ function isAcronym(s: string): boolean {
   return /\p{Lu}/u.test(s) && s === s.toUpperCase();
 }
 
-interface CompiledEntry {
+interface Matcher {
   re: RegExp;
-  to: string;
-}
-
-function compile(entries: LexiconEntry[]): CompiledEntry[] {
-  return entries
-    .filter((e) => e.from.trim() && e.to.trim())
-    // Longest first so "TP.HCM" wins over "TP." and "GS.TS" over "GS."
-    .sort((a, b) => b.from.length - a.from.length)
-    .map((e) => {
-      const from = e.from.trim();
-      const cs = e.caseSensitive ?? isAcronym(from);
-      // Token boundaries: no letter/digit immediately before or after.
-      // If the entry ends with punctuation (e.g. "TP."), the trailing
-      // boundary is already implied.
-      const endsWithWordChar = /[\p{L}\p{N}]$/u.test(from);
-      const tail = endsWithWordChar ? "(?![\\p{L}\\p{N}])" : "";
-      const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegex(from)}${tail}`, cs ? "gu" : "giu");
-      return { re, to: e.to.trim() };
-    });
-}
-
-const compiledCache = new WeakMap<LexiconEntry[], CompiledEntry[]>();
-
-function compiled(entries: LexiconEntry[]): CompiledEntry[] {
-  let c = compiledCache.get(entries);
-  if (!c) {
-    c = compile(entries);
-    compiledCache.set(entries, c);
-  }
-  return c;
+  /** Case-sensitive entries, keyed by exact written form. */
+  exact: Map<string, string>;
+  /** Case-insensitive entries, keyed by lower-cased written form. */
+  folded: Map<string, string>;
 }
 
 /**
- * Apply lexicon entries in a single left-to-right pass per entry. Replaced
- * spans are protected with private-use sentinels so a later (shorter) entry
- * cannot rewrite text an earlier entry produced.
+ * Compile all entries into ONE alternation regex (longest first, so
+ * "TP.HCM" wins over "TP." and "GS.TS" over "GS."). A single pass keeps
+ * 500+ entries cheap enough to re-run on every keystroke for the preview.
+ */
+function compile(entries: LexiconEntry[]): Matcher | null {
+  const exact = new Map<string, string>();
+  const folded = new Map<string, string>();
+  const forms: string[] = [];
+  for (const e of entries) {
+    const from = e.from.trim();
+    const to = e.to.trim();
+    if (!from || !to) continue;
+    const cs = e.caseSensitive ?? isAcronym(from);
+    const map = cs ? exact : folded;
+    const key = cs ? from : from.toLowerCase();
+    if (map.has(key)) continue; // earlier entries (the user's) win
+    map.set(key, to);
+    forms.push(from);
+  }
+  if (!forms.length) return null;
+  const alternatives = [...new Set(forms)]
+    .sort((a, b) => b.length - a.length)
+    .map((from) => {
+      // Token boundary after entries ending in a letter/digit; entries ending
+      // in punctuation (e.g. "TP.") already carry their boundary.
+      const tail = /[\p{L}\p{N}]$/u.test(from) ? "(?![\\p{L}\\p{N}])" : "";
+      return escapeRegex(from) + tail;
+    });
+  const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives.join("|")})`, "giu");
+  return { re, exact, folded };
+}
+
+const compiledCache = new WeakMap<LexiconEntry[], Matcher | null>();
+
+function compiled(entries: LexiconEntry[]): Matcher | null {
+  if (!compiledCache.has(entries)) compiledCache.set(entries, compile(entries));
+  return compiledCache.get(entries) ?? null;
+}
+
+/**
+ * Replace every lexicon match in one left-to-right pass. Output text is never
+ * re-scanned, so an expansion can't be rewritten by another entry.
  */
 export function applyLexicon(text: string, entries: LexiconEntry[]): string {
-  if (!entries.length) return text;
-  const outputs: string[] = [];
-  let t = text;
-  for (const { re, to } of compiled(entries)) {
-    t = t.replace(re, () => {
-      outputs.push(to);
-      return `${outputs.length - 1}`;
-    });
-  }
-  // Keep a space after replacements that ended with "." if followed by a word
-  return t.replace(/(\d+)/g, (_m, i) => outputs[Number(i)]);
+  const m = entries.length ? compiled(entries) : null;
+  if (!m) return text;
+  return text.replace(m.re, (match: string, offset: number, full: string) => {
+    const to = m.exact.get(match) ?? m.folded.get(match.toLowerCase());
+    if (to === undefined) return match;
+    // "TP.Hà Nội" → "thành phố Hà Nội": re-insert the space the dot stood in for.
+    const next = full[offset + match.length] ?? "";
+    return /[^\p{L}\p{N}]$/u.test(match) && /[\p{L}\p{N}]/u.test(next) ? `${to} ` : to;
+  });
 }
 
 export function builtinLexicon(lang: "vi" | "en"): LexiconEntry[] {

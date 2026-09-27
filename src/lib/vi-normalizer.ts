@@ -172,12 +172,19 @@ function convertDates(text: string): string {
       return `ngày ${numberToVietnamese(d)} tháng ${numberToVietnamese(m)} năm ${numberToVietnamese(y)}`;
     return _m;
   });
-  // DD/MM — a slash is always a date; a hyphen only after "ngày"/"hôm"
-  // ("ngày 2-9" is a date, "2-3 ngày" is a range handled by convertRanges).
-  t = t.replace(/(\d{1,2})([/-])(\d{1,2})(?![/-]?\d)/g, (_m, d, sep, m, offset, full) => {
+  // DD/MM — a slash is always a date. A hyphen is a date when it follows
+  // "ngày"/"hôm"/"mùng" (also "ngày 30-4 và 1-5"), or when day > month
+  // ("30-4"); otherwise "2-3 ngày" is a range and "2-1" a score.
+  t = t.replace(/(?<![\d-])(\d{1,2})([/-])(\d{1,2})(?![/-]?\d)/g, (_m, d, sep, m, offset, full) => {
     const after = full.slice(offset + _m.length);
+    const before = full.slice(0, offset);
     if (/^\s*%/.test(after)) return _m;
-    if (sep === "-" && !/(?:ngày|hôm|mùng|mồng)\s*$/i.test(full.slice(0, offset))) return _m;
+    if (sep === "-") {
+      const afterKeyword = /(?:ngày|hôm|mùng|mồng)\s*$/i.test(before);
+      const listedAfterDate = /(?:ngày|hôm|mùng|mồng)\s*\d{1,2}-\d{1,2}\s*(?:và|,|đến|tới|hoặc)\s*$/i.test(before);
+      const dayAfterMonth = parseInt(d) > parseInt(m) && !SCORE_CONTEXT.test(before);
+      if (!afterKeyword && !listedAfterDate && !dayAfterMonth) return _m;
+    }
     if (isValidDay(parseInt(d), parseInt(m)))
       return `${numberToVietnamese(d)} tháng ${numberToVietnamese(m)}`;
     return _m;
@@ -201,20 +208,43 @@ function convertYearRanges(text: string): string {
   );
 }
 
-/** "2-3 ngày", "10–15 người" → "hai đến ba ngày" (after dates/percentages). */
+/** Words that introduce a match score: "thắng 2-1", "tỷ số 3-0". */
+const SCORE_CONTEXT = /(?:tỷ số|tỉ số|thắng|thua|hòa|hoà|cách biệt|dẫn|gỡ hòa|gỡ hoà)\s*$/i;
+
+/**
+ * Hyphenated number pairs, after dates/percentages:
+ *   "thắng 2-1" → "thắng hai một" (score)
+ *   "2-3 ngày", "10–15 người" → "hai đến ba ngày" (ascending range)
+ * Codes and chains ("số 12-2024", "123-456-789") are left alone.
+ */
 function convertRanges(text: string): string {
-  return text.replace(/(?<![\d.,])(\d+)\s*[-–—]\s*(\d+)(?![\d/%])/g, (_m, a, b) =>
-    `${numberToVietnamese(a)} đến ${numberToVietnamese(b)}`
+  return text.replace(/(?<![\d.,\-–—])(\d+)\s*[-–—]\s*(\d+)(?![\d/%]|\s*[-–—]\s*\d)/g, (m, a, b, offset, full) => {
+    const before = full.slice(0, offset);
+    if (SCORE_CONTEXT.test(before)) return `${numberToVietnamese(a)} ${numberToVietnamese(b)}`;
+    if (/(?:số|mã|ký hiệu|kí hiệu|No\.?)\s*$/i.test(before)) return m;
+    if (a.length > 4 || b.length > 4 || parseInt(a, 10) >= parseInt(b, 10)) return m;
+    return `${numberToVietnamese(a)} đến ${numberToVietnamese(b)}`;
+  });
+}
+
+/** "0912-345-678", "0912 345 678" → digit by digit (before ranges/dates). */
+function convertGroupedPhoneNumbers(text: string): string {
+  return text.replace(/(?<![\d])(?:\+84|0)\d{2,3}[-. ]\d{3}[-. ]\d{3,4}(?!\d)/g, (m) =>
+    m.match(/\d/g)!.map((d) => DIGITS[d] || d).join(" ")
   );
 }
 
 /** Informal money shorthand common in Vietnamese copy: 50k, 5tr, 2 tỷ. */
 function convertShorthandAmounts(text: string): string {
   let t = text;
-  t = t.replace(/(\d+)(?:[.,](\d+))?\s*tr(?![a-zà-ỹ])/gi, (_m, w, f) =>
-    f ? `${numberToVietnamese(w)} phẩy ${numberToVietnamese(f)} triệu` : `${numberToVietnamese(w)} triệu`
-  );
-  t = t.replace(/(\d+)\s*k(?![a-zà-ỹ])/gi, (_m, n) => `${numberToVietnamese(n)} nghìn`);
+  const amount = (w: string, f: string | undefined, unit: string) =>
+    f
+      ? `${numberToVietnamese(w)} phẩy ${numberToVietnamese(f.replace(/^0+/, "") || "0")} ${unit}`
+      : `${numberToVietnamese(w)} ${unit}`;
+  // Lowercase only ("4K" is a resolution) and never glued to more digits
+  // ("2k6", "5tr5" are slang we leave untouched).
+  t = t.replace(/(?<![\d.,])(\d+)(?:[.,](\d+))?\s*tr(?![a-zà-ỹ\d])/g, (_m, w, f) => amount(w, f, "triệu"));
+  t = t.replace(/(?<![\d.,])(\d+)(?:[.,](\d+))?\s*k(?![a-zà-ỹ\d])/g, (_m, w, f) => amount(w, f, "nghìn"));
   return t;
 }
 
@@ -246,8 +276,10 @@ function numberToRoman(n: number): string {
 /** "thế kỷ XXI", "Đại hội XIII", "khóa XV" → Vietnamese numbers. */
 function convertRomanNumerals(text: string): string {
   return text.replace(
-    /((?:thế kỷ|thế kỉ|đại hội|khóa|khoá|kỳ họp|chương|phần|hội nghị|quý|lần thứ|thứ)\s+)([IVXLC]+)(?![\p{L}\d])/giu,
+    /((?:thế kỷ|thế kỉ|đại hội|khóa|khoá|kỳ họp|chương|hội nghị|quý|lần thứ)\s+)([IVXLC]+)(?![\p{L}\d])/giu,
     (m, prefix, roman) => {
+      // Numerals must be written in capitals; a lone C/L is a letter ("mục C").
+      if (roman !== roman.toUpperCase() || /^[CL]$/.test(roman)) return m;
       const n = romanToNumber(roman);
       return n ? prefix + numberToVietnamese(String(n)) : m;
     }
@@ -347,6 +379,7 @@ export function normalizeVietnameseText(text: string): string {
   t = cleanSpecialChars(t);
   t = normalizePunctuation(t);
   t = removeThousandsSeparators(t); // 100.000 → 100000
+  t = convertGroupedPhoneNumbers(t); // 0912-345-678 → digit by digit
   t = convertYearRanges(t);         // 2020-2025 → hai nghìn hai mươi đến...
   t = convertDates(t);              // 22/1/2024 → ngày hai mươi hai tháng một...
   t = convertTimes(t);              // 14:30 → mười bốn giờ ba mươi

@@ -193,8 +193,11 @@ export function prepareSpoken(
   normalize = true,
 ): string {
   let t = display.normalize("NFC");
-  t = applyLexicon(t, lexicon);
+  // Sentence-case ALL CAPS headlines *before* the lexicon, so capitalised
+  // words ("AI" = "who") aren't mistaken for acronyms. Vowel-less acronyms
+  // (UBND, TP, HCM) survive decapitalising and still expand.
   if (isAllCaps(t)) t = decapitalize(t);
+  t = applyLexicon(t, lexicon);
   if (lang === "vi" && normalize) t = normalizeVietnameseText(t);
   else t = t.replace(/\s+/g, " ").trim();
   if (phrasing) t = insertPhraseBreaks(t, lang);
@@ -213,11 +216,13 @@ export function planScript(text: string, options: PlanOptions = {}): ScriptPlan 
   const units = segmentScript(text);
   const segments: PlannedSegment[] = [];
   let manualPause = 0;
+  let sawPauseTag = false;
   let prevType: SentenceType | null = null;
 
   for (const unit of units) {
     if (unit.kind === "pause") {
       manualPause += unit.ms;
+      sawPauseTag = true;
       continue;
     }
     const spoken = prepareSpoken(unit.text, lang, lexicon, phrasing, options.normalize ?? true);
@@ -252,12 +257,13 @@ export function planScript(text: string, options: PlanOptions = {}): ScriptPlan 
       type: unit.type,
       paragraph: unit.paragraph,
       boundary: unit.boundary,
-      manualPause: manualPause > 0 && segments.length > 0,
+      manualPause: sawPauseTag && segments.length > 0,
       rate: clamp(Math.round(rate), -50, 100),
       pitch: clamp(Math.round(pitch), -50, 50),
-      pauseBeforeMs: Math.round(segments.length ? (manualPause > 0 ? manualPause : autoPause) : manualPause),
+      pauseBeforeMs: Math.round(segments.length ? (sawPauseTag ? manualPause : autoPause) : manualPause),
     });
     manualPause = 0;
+    sawPauseTag = false;
     prevType = unit.type;
   }
 

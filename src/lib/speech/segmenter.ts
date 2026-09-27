@@ -66,18 +66,23 @@ export function mapPauseTags(text: string, fn: (ms: number) => string): string {
   return text.replace(PAUSE_TAG, (_m, n1, u1, n2, u2) => fn(parsePauseMs(n1 ?? n2, u1 ?? u2)));
 }
 
-// Tokens that end with "." but do not end a sentence.
+// Tokens that end with "." but do not end a sentence. Only unambiguous
+// titles/abbreviations: ordinary words ("sen", "gen", "no", "h" in "10h")
+// and forms that often end a sentence ("etc.", "v.v.", "p.m.") are excluded.
 const ABBREVIATIONS = new Set(
   [
     // Vietnamese
-    "tp", "gs", "pgs", "ts", "ths", "bs", "ks", "ls", "ns", "nxb", "q", "p", "tx", "tt", "h",
-    "gs.ts", "pgs.ts", "v.v", "tr", "st", "đc", "sđt", "ct", "cty", "tnhh",
+    "tp", "gs", "pgs", "ts", "ths", "bs", "ks", "nxb", "tx", "gs.ts", "pgs.ts", "cty", "tnhh", "sđt",
     // English
-    "mr", "mrs", "ms", "dr", "prof", "sr", "jr", "st", "vs", "etc", "e.g", "i.e", "inc", "ltd",
-    "co", "corp", "no", "vol", "fig", "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep",
-    "sept", "oct", "nov", "dec", "u.s", "u.k", "a.m", "p.m", "approx", "dept", "gen", "gov", "sen", "rep",
+    "mr", "mrs", "ms", "dr", "prof", "sr", "jr", "vs", "e.g", "i.e", "vol", "fig", "jan", "feb",
+    "mar", "apr", "jun", "jul", "aug", "sep", "sept", "oct", "nov", "dec", "u.s", "u.k", "approx",
+    "dept", "gen", "gov", "sen", "rep",
   ].map((s) => s.toLowerCase()),
 );
+
+// Titles that are also everyday Vietnamese words: only abbreviations when
+// they start with a capital ("Sen." the senator vs "hoa sen.").
+const CAPITALIZED_ONLY = new Set(["gen", "sen", "rep", "gov", "mar", "dec"]);
 
 const TERMINATORS = /[.!?…。！？]/;
 const CLOSERS = /["'”’)\]»]/;
@@ -88,9 +93,14 @@ function isAbbreviationBefore(text: string, dotIndex: number): boolean {
   while (i >= 0 && /[\p{L}.]/u.test(text[i])) i--;
   const token = text.slice(i + 1, dotIndex).toLowerCase();
   if (!token) return false;
-  if (ABBREVIATIONS.has(token)) return true;
-  // Single-letter initials: "J. Smith", "Nguyễn V. A"
-  if (/^\p{L}$/u.test(token) && /\p{Lu}/u.test(text[dotIndex - 1])) return true;
+  const raw = text.slice(i + 1, dotIndex);
+  if (ABBREVIATIONS.has(token)) return !CAPITALIZED_ONLY.has(token) || /^\p{Lu}/u.test(raw);
+  // Single-letter initials ("J. Smith", "Nguyễn V. A"): the word before must
+  // be capitalised or absent — "38 độ C." and "vitamin C." end sentences.
+  if (/^\p{Lu}$/u.test(raw)) {
+    const prevWord = text.slice(0, i + 1).trimEnd().split(/\s+/).pop() ?? "";
+    return prevWord === "" || /^\p{Lu}/u.test(prevWord);
+  }
   return false;
 }
 
@@ -173,16 +183,27 @@ function isAllCaps(line: string): boolean {
   return upper / letters.length > 0.85 && /\s/.test(line.trim());
 }
 
+const VI_VOWELS = "aeiouyàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ";
+/** Onset + vowel nucleus + final allowed by Vietnamese phonotactics. */
+const VI_SYLLABLE = new RegExp(
+  `^(?:ngh|ng|nh|ch|gh|gi|kh|ph|qu|th|tr|[bcdđghklmnpqrstvx])?[${VI_VOWELS}]{1,3}(?:ch|ng|nh|[cmnpt])?$`,
+  "iu",
+);
+
 /**
  * Sentence-case an ALL CAPS headline so the voice doesn't spell it out,
- * while keeping vowel-less acronyms (e.g. "BHXH", "CSGT", "TP") intact.
- * Run the lexicon first so known acronyms are already expanded.
+ * while keeping acronyms (short tokens that can't be a Vietnamese syllable,
+ * e.g. "UBND", "BHXH", "TP") and Roman numerals intact, so the lexicon and
+ * normaliser can still expand them afterwards.
  */
 export function decapitalize(line: string): string {
   let first = true;
   return line.replace(/\p{L}+/gu, (w) => {
-    const vowelless = !/[aeiouyàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]/iu.test(w);
-    const out = vowelless ? w : first ? w[0] + w.slice(1).toLowerCase() : w.toLowerCase();
+    const roman = w.length > 1 && /^[IVXLC]+$/.test(w); // "ĐẠI HỘI XIII"
+    // Short tokens that can't be a Vietnamese syllable are acronyms
+    // ("UBND", "BHXH", "TP"); "AI", "LÀ" are words and get lowercased.
+    const acronym = w.length <= 4 && !VI_SYLLABLE.test(w);
+    const out = acronym || roman ? w : first ? w[0] + w.slice(1).toLowerCase() : w.toLowerCase();
     first = false;
     return out;
   });

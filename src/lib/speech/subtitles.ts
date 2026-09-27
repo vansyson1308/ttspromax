@@ -100,17 +100,21 @@ export function splitCue(cue: TimedCue, max = CUE_CHARS): TimedCue[] {
   const text = cue.text.replace(/\s+/g, " ").trim();
   if (text.length <= max) return [{ ...cue, text }];
   const chunks = chunkText(text, max);
-  const out: TimedCue[] = [];
+  // Start times first, then ends capped by the next start: cues never overlap.
+  const starts: number[] = [];
+  const bounds: number[] = [];
   let consumed = 0;
   chunks.forEach((chunk, i) => {
-    const startF = consumed / text.length;
+    starts.push(i === 0 ? cue.startMs : Math.max(starts[i - 1], timeAtFraction(cue, consumed / text.length)));
     consumed += chunk.length + 1;
-    const endF = Math.min(1, consumed / text.length);
-    const startMs = i === 0 ? cue.startMs : timeAtFraction(cue, startF);
-    const endMs = i === chunks.length - 1 ? cue.endMs : Math.max(startMs + 300, timeAtFraction(cue, endF) - 40);
-    out.push({ index: cue.index, text: chunk, startMs, endMs });
+    bounds.push(Math.min(1, consumed / text.length));
   });
-  return out;
+  return chunks.map((chunk, i) => {
+    const isLast = i === chunks.length - 1;
+    const nextStart = isLast ? cue.endMs : starts[i + 1];
+    const wanted = isLast ? cue.endMs : Math.max(starts[i] + 300, timeAtFraction(cue, bounds[i]) - 40);
+    return { index: cue.index, text: chunk, startMs: starts[i], endMs: Math.max(starts[i], Math.min(wanted, nextStart)) };
+  });
 }
 
 function stamp(ms: number, sep: "," | "."): string {
