@@ -106,16 +106,33 @@ export const EN_BUILTIN_LEXICON: LexiconEntry[] = [
 
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/** Case-insensitive pattern for one literal, without a global `i` flag. */
+function caseless(s: string): string {
+  return [...s]
+    .map((ch) => {
+      const lo = ch.toLowerCase();
+      const up = ch.toUpperCase();
+      return lo !== up && lo.length === 1 && up.length === 1 ? `[${lo}${up}]` : escapeRegex(ch);
+    })
+    .join("");
+}
+
 function isAcronym(s: string): boolean {
   return /\p{Lu}/u.test(s) && s === s.toUpperCase();
+}
+
+/** Replacement plus its position in the entry list (lower = higher priority). */
+interface Target {
+  to: string;
+  order: number;
 }
 
 interface Matcher {
   re: RegExp;
   /** Case-sensitive entries, keyed by exact written form. */
-  exact: Map<string, string>;
+  exact: Map<string, Target>;
   /** Case-insensitive entries, keyed by lower-cased written form. */
-  folded: Map<string, string>;
+  folded: Map<string, Target>;
 }
 
 /**
@@ -124,30 +141,33 @@ interface Matcher {
  * 500+ entries cheap enough to re-run on every keystroke for the preview.
  */
 function compile(entries: LexiconEntry[]): Matcher | null {
-  const exact = new Map<string, string>();
-  const folded = new Map<string, string>();
-  const forms: string[] = [];
-  for (const e of entries) {
+  const exact = new Map<string, Target>();
+  const folded = new Map<string, Target>();
+  const forms: Array<{ from: string; cs: boolean }> = [];
+  entries.forEach((e, order) => {
     const from = e.from.trim();
     const to = e.to.trim();
-    if (!from || !to) continue;
+    if (!from || !to) return;
     const cs = e.caseSensitive ?? isAcronym(from);
     const map = cs ? exact : folded;
     const key = cs ? from : from.toLowerCase();
-    if (map.has(key)) continue; // earlier entries (the user's) win
-    map.set(key, to);
-    forms.push(from);
-  }
+    if (map.has(key)) return; // earlier entries (the user's) win
+    map.set(key, { to, order });
+    forms.push({ from, cs });
+  });
   if (!forms.length) return null;
-  const alternatives = [...new Set(forms)]
-    .sort((a, b) => b.length - a.length)
-    .map((from) => {
+  // No global `i` flag: case-insensitive entries get per-letter classes, so
+  // every regex match is a real entry and shorter entries still get a turn
+  // when a longer case-sensitive one differs in case ("Tp HCM").
+  const alternatives = forms
+    .sort((a, b) => b.from.length - a.from.length)
+    .map(({ from, cs }) => {
       // Token boundary after entries ending in a letter/digit; entries ending
       // in punctuation (e.g. "TP.") already carry their boundary.
       const tail = /[\p{L}\p{N}]$/u.test(from) ? "(?![\\p{L}\\p{N}])" : "";
-      return escapeRegex(from) + tail;
+      return (cs ? escapeRegex(from) : caseless(from)) + tail;
     });
-  const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives.join("|")})`, "giu");
+  const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives.join("|")})`, "gu");
   return { re, exact, folded };
 }
 
@@ -166,12 +186,27 @@ export function applyLexicon(text: string, entries: LexiconEntry[]): string {
   const m = entries.length ? compiled(entries) : null;
   if (!m) return text;
   return text.replace(m.re, (match: string, offset: number, full: string) => {
-    const to = m.exact.get(match) ?? m.folded.get(match.toLowerCase());
-    if (to === undefined) return match;
+    // Both maps may hold the word (e.g. a user's case-insensitive "AI" and
+    // the built-in case-sensitive "AI"); the earlier entry — the user's — wins.
+    const candidates = [m.exact.get(match), m.folded.get(match.toLowerCase())].filter(Boolean) as Target[];
+    if (!candidates.length) return match;
+    const to = candidates.sort((a, b) => a.order - b.order)[0].to;
     // "TP.Hà Nội" → "thành phố Hà Nội": re-insert the space the dot stood in for.
     const next = full[offset + match.length] ?? "";
     return /[^\p{L}\p{N}]$/u.test(match) && /[\p{L}\p{N}]/u.test(next) ? `${to} ` : to;
   });
+}
+
+const formsCache = new WeakMap<LexiconEntry[], Set<string>>();
+
+/** Written forms of case-sensitive (acronym) entries, e.g. "VKSND", "ĐBSCL". */
+export function caseSensitiveForms(entries: LexiconEntry[]): Set<string> {
+  let set = formsCache.get(entries);
+  if (!set) {
+    set = new Set(entries.filter((e) => e.caseSensitive ?? isAcronym(e.from.trim())).map((e) => e.from.trim()));
+    formsCache.set(entries, set);
+  }
+  return set;
 }
 
 export function builtinLexicon(lang: "vi" | "en"): LexiconEntry[] {

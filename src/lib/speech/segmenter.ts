@@ -193,16 +193,23 @@ const VI_SYLLABLE = new RegExp(
 /**
  * Sentence-case an ALL CAPS headline so the voice doesn't spell it out,
  * while keeping acronyms (short tokens that can't be a Vietnamese syllable,
- * e.g. "UBND", "BHXH", "TP") and Roman numerals intact, so the lexicon and
- * normaliser can still expand them afterwards.
+ * e.g. "UBND", "BHXH", "TP"; any vowel-less token; anything in `keep`, the
+ * lexicon's acronym forms such as "UBTVQH") and Roman numerals intact, so the
+ * lexicon and normaliser can still expand them afterwards.
  */
-export function decapitalize(line: string): string {
+export function decapitalize(line: string, keep: ReadonlySet<string> = new Set()): string {
   let first = true;
   return line.replace(/\p{L}+/gu, (w) => {
+    // Known acronyms stay, unless they are also a Vietnamese word ("AI" = "ai").
+    if (keep.has(w) && !VI_SYLLABLE.test(w)) {
+      first = false;
+      return w;
+    }
     const roman = w.length > 1 && /^[IVXLC]+$/.test(w); // "ĐẠI HỘI XIII"
     // Short tokens that can't be a Vietnamese syllable are acronyms
     // ("UBND", "BHXH", "TP"); "AI", "LÀ" are words and get lowercased.
-    const acronym = w.length <= 4 && !VI_SYLLABLE.test(w);
+    const vowelless = !new RegExp(`[${VI_VOWELS}]`, "iu").test(w);
+    const acronym = vowelless || (w.length <= 4 && !VI_SYLLABLE.test(w));
     const out = acronym || roman ? w : first ? w[0] + w.slice(1).toLowerCase() : w.toLowerCase();
     first = false;
     return out;

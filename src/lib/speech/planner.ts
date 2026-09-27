@@ -13,7 +13,7 @@
 
 import { normalizeVietnameseText } from "@/lib/vi-normalizer";
 import { detectScriptLang } from "@/lib/script-lang-detect";
-import { applyLexicon, builtinLexicon, type LexiconEntry } from "./lexicon";
+import { applyLexicon, builtinLexicon, caseSensitiveForms, type LexiconEntry } from "./lexicon";
 import { insertPhraseBreaks } from "./phrasing";
 import {
   decapitalize,
@@ -177,7 +177,8 @@ export function formatPitch(pitch: number): string {
   return `${p >= 0 ? "+" : ""}${p}Hz`;
 }
 
-function mergeLexicons(user: LexiconEntry[], lang: ScriptLang): LexiconEntry[] {
+/** User entries first (they win), then built-ins the user didn't override. */
+export function mergeLexicons(user: LexiconEntry[], lang: ScriptLang): LexiconEntry[] {
   const userKeys = new Set(user.map((e) => e.from.trim().toLowerCase()));
   return [...user, ...builtinLexicon(lang).filter((e) => !userKeys.has(e.from.toLowerCase()))];
 }
@@ -196,7 +197,7 @@ export function prepareSpoken(
   // Sentence-case ALL CAPS headlines *before* the lexicon, so capitalised
   // words ("AI" = "who") aren't mistaken for acronyms. Vowel-less acronyms
   // (UBND, TP, HCM) survive decapitalising and still expand.
-  if (isAllCaps(t)) t = decapitalize(t);
+  if (isAllCaps(t)) t = decapitalize(t, caseSensitiveForms(lexicon));
   t = applyLexicon(t, lexicon);
   if (lang === "vi" && normalize) t = normalizeVietnameseText(t);
   else t = t.replace(/\s+/g, " ").trim();

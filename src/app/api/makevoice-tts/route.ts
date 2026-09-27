@@ -4,8 +4,7 @@ export const maxDuration = 60;
 import { NextRequest } from "next/server";
 import { parseBody, makevoiceSchema } from "@/lib/api-validators";
 import { logger } from "@/lib/logger";
-import { builtinLexicon } from "@/lib/speech/lexicon";
-import { prepareSpoken } from "@/lib/speech/planner";
+import { mergeLexicons, prepareSpoken } from "@/lib/speech/planner";
 import { mapPauseTags } from "@/lib/speech/segmenter";
 
 const MAKEVOICE_API = "https://makevoice.io/api";
@@ -77,7 +76,7 @@ export async function POST(request: NextRequest) {
     // Select model with auto-detection
     const selectedModel = selectModel(rawText, undefined, model_id);
     const lang = detectLanguage(rawText) === "vi" ? "vi" : "en";
-    const text = prepareForElevenLabs(rawText, lang, [...lexicon, ...builtinLexicon(lang)]);
+    const text = prepareForElevenLabs(rawText, lang, mergeLexicons(lexicon, lang));
 
     // Forward request to MakeVoice.io API
     // Use 'model' parameter (MakeVoice.io accepts both 'model' and 'model_id')
