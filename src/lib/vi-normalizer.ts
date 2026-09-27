@@ -137,8 +137,14 @@ function convertCurrency(text: string): string {
   let t = text;
   const amount = (n: string, mult?: string) => decimalToVietnamese(n) + (mult ? ` ${mult}` : "");
   // Ranges: "300-500đ/lít", "5-10 USD" (number pairs skip these for us)
-  t = t.replace(/(?<![\d.,])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)\s*(?:đồng|VND|vnđ|đ)(?![\p{L}])/giu, (_m, a, b) => `${amount(a)} đến ${amount(b)} đồng`);
-  t = t.replace(/(?<![\d.,])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)\s*(?:USD|\$)/giu, (_m, a, b) => `${amount(a)} đến ${amount(b)} đô la`);
+  const moneyRange = (unit: string) => (m: string, a: string, b: string) =>
+    numericValue(a) < numericValue(b) ? `${amount(a)} đến ${amount(b)} ${unit}` : m;
+  t = t.replace(
+    /(?<![\d.,])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)\s*(?:đồng(?!\s+(?:bào|loạt|chí|nghiệp|thời|nghĩa))|VND|vnđ|đ(?!\/c(?!\p{L})))(?![\p{L}])/giu,
+    moneyRange("đồng"),
+  );
+  t = t.replace(/(?<![\d.,])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)\s*(?:USD|\$)/giu, moneyRange("đô la"));
+  t = t.replace(/\$\s*(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)(?![\d,])/g, moneyRange("đô la"));
   // VND: 100000đồng, 100000VND, 100000đ, 1,2 tỷ đồng
   t = t.replace(/(\d+(?:,\d+)?)\s*(?:đồng|VND|vnđ)(?![\p{L}])/giu, (_m, n) => amount(n) + " đồng");
   t = t.replace(/(\d+(?:,\d+)?)đ(?![a-zà-ỹ])/gi, (_m, n) => amount(n) + " đồng");
@@ -255,7 +261,7 @@ function convertDayMonthWords(text: string): string {
 }
 
 function convertYearRanges(text: string): string {
-  return text.replace(/(?<![\d.,])(\d{4})\s*[-–—]\s*(\d{4})(?![\d.,]\d|\d)/g, (_m, a, b) =>
+  return text.replace(/(?<![\d.]|(?<!\d{4}),)(\d{4})\s*[-–—]\s*(\d{4})(?!\d|[.,]\d(?!\d{3}(?!\d)))/g, (_m, a, b) =>
     numberToVietnamese(a) + " đến " + numberToVietnamese(b)
   );
 }
@@ -274,10 +280,12 @@ function convertYearRanges(text: string): string {
 //   5. time-of-day dateline ("Chiều 5-6,")→ date
 //   6. score word in the same clause      → score
 //   7. unambiguous date partner after     → date ("từ 1-5 đến 10-5")
-//   8. ascending + counting noun after    → range ("2-3 ngày")
-//   9. day > month, valid date            → date ("30-4")
-//  10. ascending                          → range
-//  11. otherwise                          → keep
+//   8. event word + date-like tail        → date ("Từ 1-7 năm nay,", "lễ 2-9 kéo dài")
+//   9. ascending + counting noun after    → range ("2-3 ngày", "2-3 ngày sau")
+//  10. event/deadline word before         → date ("kết thúc 1-5", "dịp 2-9")
+//  11. day ≥ month, valid date            → date ("30-4", "10-10")
+//  12. ascending                          → range
+//  13. otherwise                          → keep
 
 /** Words that make "D-M" a date: "ngày 2-9", "mùng 2-9". */
 const DATE_KEYWORDS = /(?<!\p{L})(?:ngày|hôm|mùng|mồng)\s*$/iu;
@@ -288,6 +296,13 @@ const DATE_KEYWORDS = /(?<!\p{L})(?:ngày|hôm|mùng|mồng)\s*$/iu;
  */
 const TIME_OF_DAY = /(?<!\p{L})(?:sáng|trưa|chiều|tối|đêm|khuya|rạng sáng)\s*$/iu;
 const DATELINE_END = /^\s*(?:[,.;:!?)]|$|\p{Lu}|năm\s+(?:nay|ngoái|\d))/u;
+/** Event/deadline words: a valid D-M right after them is a date ("kết thúc 1-5", "dịp 2-9"). */
+const EVENT_BEFORE =
+  /(?<!\p{L})(?:kết thúc|bắt đầu|khai mạc|bế mạc|diễn ra|khởi công|khánh thành|hết hạn|có hiệu lực|đến hết|dịp|lễ|quốc khánh|tết)\s*$/iu;
+/** "từ"/"trước" also start date phrases, but only with a date-like tail: "Từ 1-7 năm nay,". */
+const EVENT_OR_FROM_BEFORE =
+  /(?<!\p{L})(?:kết thúc|bắt đầu|khai mạc|bế mạc|diễn ra|khởi công|khánh thành|hết hạn|có hiệu lực|đến hết|dịp|lễ|quốc khánh|tết|từ|trước)\s*$/iu;
+const DATE_TAIL = /^\s*(?:[,.;:!?)]|$|năm\s+(?:nay|ngoái|\d)|đồng loạt|kéo dài|có hiệu lực|\p{Lu})/u;
 const CODE_PREFIX = /(?<!t[ỷỉ]\s)(?:số|mã|ký hiệu|kí hiệu|No\.?)\s*$/iu;
 const LIST_CONNECTOR = /^\s*(?:và|,|đến|tới|hoặc|-)\s*$/i;
 
@@ -296,15 +311,32 @@ const SCORE_WORDS =
   /(?<!\p{L})(?:t[ỷỉ] số|chung cuộc|cách biệt|đánh bại|hạ gục|dẫn trước|vượt qua|đè bẹp|thất bại|kết thúc|chiến thắng|thắng(?! (?:lợi|thầu|kiện))|thua(?! (?:lỗ|kiện))|(?:cầm |gỡ )?h(?:òa|oà)(?! (?:bình|giải|hợp|nhập|thuận|vốn)))(?!\p{L})/giu;
 
 /**
+ * Score words that are just as common outside sport ("Khuyến mãi kết thúc
+ * 30-4", "đảo chính thất bại 15-7"): they only count with a sports cue in
+ * the clause, or a capitalised team name right after them.
+ */
+const WEAK_SCORE_WORDS = /^(?:vượt qua|đè bẹp|thất bại|kết thúc)$/iu;
+const SPORTS_CUE =
+  /(?<!\p{L})(?:trận|đấu|hiệp|set|ván|lượt|bán kết|chung kết|tứ kết|vòng bảng|t[ỷỉ] số|đội|tuyển|CLB|FC|U\d{2}|sân nhà|sân khách|bàn thắng)(?!\p{L})/iu;
+
+/**
  * Score words that double as names: "Hòa Phát", "Khánh Hòa", "Thắng",
  * "Chiến thắng Điện Biên Phủ" (an event). Only these are skipped when
  * capitalised next to another capitalised word.
  */
 const NAME_CAPABLE = /^(?:h(?:òa|oà)|thắng|chiến thắng)$/iu;
 
+/**
+ * A currency unit after the pair ("300-500đ/lít", "5-10 USD"). "đồng" opens
+ * many ordinary words (đồng bào, đồng loạt, đồng thời…) and "đ/c" is
+ * "đồng chí", so those don't count.
+ */
+const CURRENCY_AFTER =
+  /^\s*(?:VNĐ|VND|vnđ|USD|\$|đ(?!\/c(?!\p{L}))|đồng(?!\s+(?:bào|loạt|chí|nghiệp|thời|nghĩa|hồ|hành|ý|tình|lòng|minh|đội|ruộng|bằng|cỏ|phục|dạng|âm|hương|tâm|khởi|ca|lõa|lõa|Nai|Tháp|Hới|Xoài|Văn|Tháp)))(?![\p{L}\d])/u;
+
 /** Counting nouns: "2-3 ngày", "6-7 tấn" are quantities. */
 const COUNTER_AFTER =
-  /^\s*(ngày|tuần|tháng|năm|quý|lần|trận|vòng|lượt|mùa|hiệp|phiên|điểm|bàn|tấn|gói|vụ|nhiệm kỳ|người|triệu|tỷ|tỉ|nghìn|ngàn|giờ|tiếng|phút|giây|mét|ki-lô|xăng-ti|mi-li|héc-ta|lít|độ|con|cái|chiếc|căn|hộ|bước|tầng|suất|món|học sinh|doanh nghiệp|dự án)(?!\p{L})/iu;
+  /^\s*(ngày|tuần|tháng|năm|quý|lần|trận|vòng|lượt|mùa|hiệp|phiên|điểm|bàn|tấn|gói|vụ|nhiệm kỳ|người|triệu|tỷ|tỉ|nghìn|ngàn|giờ|tiếng|phút|giây|mét|ki-lô|xăng-ti|mi-li|héc-ta|lít|độ|con|cái|chiếc|căn|hộ|bước|tầng|suất|món|tuổi|học sinh|doanh nghiệp|dự án)(?!\p{L})/iu;
 /** Time/phase nouns that, followed by these, date the event instead: "3-0 năm 2018", "2-1 lượt đi". */
 const TIME_COUNTERS = /^(?:ngày|tuần|tháng|năm|quý|trận|vòng|lượt|mùa|hiệp)$/i;
 const TIME_DEIXIS = /^\s+(?:\d|ngoái|nay|này|trước|sau|tới|đi|về|lượt|ra quân|phụ|đầu|cuối|chót|bù giờ)(?!\p{L})/iu;
@@ -329,9 +361,19 @@ function inScoreContext(before: string, a: string, b: string, after: string): bo
     const word = m[0];
     const big = parseFloat(a) >= 20 || parseFloat(b) >= 20;
     if (/^chiến/i.test(word) && big) continue;
-    // "thắng lớn dịp 30-4": a big date-like pair only scores right after the score word.
-    const gap = window.slice(m.index! + word.length).trim().split(/\s+/).filter(Boolean).length;
-    if (big && parseInt(b, 10) <= 12 && gap > 1) continue;
+    const between = window.slice(m.index! + word.length).trim().split(/\s+/).filter(Boolean);
+    const restOfClause = after.split(/[,;.!?]/)[0];
+    if (
+      WEAK_SCORE_WORDS.test(word) &&
+      !SPORTS_CUE.test(clause) &&
+      !SPORTS_CUE.test(restOfClause) &&
+      !/^\p{Lu}/u.test(between[0] ?? "")
+    )
+      continue;
+    // "thắng lớn dịp 30-4", "Thắng lớn 30-4": a big date-like pair only
+    // scores right after the score word or an intensifier ("thua đậm 25-12").
+    const intensifiersOnly = between.every((w) => /^(?:đậm|nhọc|sát|nút|tưng|bừng|kịch|tính|nghẹt|thở)$/iu.test(w));
+    if (big && parseInt(b, 10) <= 12 && !intensifiersOnly) continue;
     if (/^\p{Lu}/u.test(word) && NAME_CAPABLE.test(word)) {
       const prev = window.slice(0, m.index).trimEnd().split(" ").pop() ?? "";
       const next = window.slice(m.index! + word.length).trimStart().split(" ")[0] ?? "";
@@ -345,7 +387,11 @@ function inScoreContext(before: string, a: string, b: string, after: string): bo
 type PairClass = "months" | "keep" | "date" | "score" | "range";
 
 function classifyPair(a: string, b: string, before: string, after: string, listed: PairClass | null): PairClass {
-  if (a.includes(",") || b.includes(",")) return numericValue(a) < numericValue(b) ? "range" : "keep";
+  if (a.includes(",") || b.includes(",")) {
+    // Decimal money ranges ("12,5-13 USD") are read by convertCurrency.
+    if (CURRENCY_AFTER.test(after)) return "keep";
+    return numericValue(a) < numericValue(b) ? "range" : "keep";
+  }
   const x = parseInt(a, 10);
   const y = parseInt(b, 10);
   const validDate = x >= 1 && x <= 31 && y >= 1 && y <= 12;
@@ -356,11 +402,16 @@ function classifyPair(a: string, b: string, before: string, after: string, liste
   if (listed === "date" && validDate) return "date";
   if (validDate && TIME_OF_DAY.test(before) && DATELINE_END.test(after)) return "date";
   if (inScoreContext(before, a, b, after)) return "score";
+  // Leave ascending money ranges for convertCurrency ("300-500đ", "5-10 USD").
+  if (x < y && CURRENCY_AFTER.test(after)) return "keep";
   const partner = after.match(/^\s*(?:và|,|đến|tới|hoặc)\s*(\d{1,2})-(\d{1,2})(?![-\d])/i);
   if (validDate && partner && parseInt(partner[1]) > parseInt(partner[2]) && parseInt(partner[2]) <= 12) return "date";
   // Ranges ascend; "Đêm 31-12 người dân…" is still a date.
-  if (x < y && followedByCounter(after)) return "range";
-  if (validDate && x > y) return "date";
+  if (validDate && EVENT_OR_FROM_BEFORE.test(before) && DATE_TAIL.test(after)) return "date";
+  if (x < y && COUNTER_AFTER.test(after)) return "range";
+  if (validDate && EVENT_BEFORE.test(before)) return "date";
+  // Day ≥ month can't be an ascending range: "30-4", "10-10".
+  if (validDate && x >= y) return "date";
   if (x < y && a.length <= 6 && b.length <= 6) return "range";
   return "keep";
 }
@@ -374,7 +425,7 @@ function convertNumberPairs(text: string): string {
   let lastClass: PairClass | null = null;
   let lastEnd = -1;
   return text.replace(
-    /(?<![\d.,:\-–—/]|\d[hH])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)(?![\d/%]|,\d|:\d|\s*[-–—]\s*\d|\s*%|\s*(?:k|tr|đ|đồng|VNĐ|VND|vnđ|USD|\$)(?![\p{L}\d]))/gu,
+    /(?<![\d.,:\-–—/$]|\d[hH]|\$\s)(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)(?![\d/%]|,\d|:\d|\s*[-–—]\s*\d|\s*%|\s*(?:k|tr)(?![\p{L}\d]))/gu,
     (m, a, b, offset, full) => {
       const before = full.slice(0, offset);
       const after = full.slice(offset + m.length);
