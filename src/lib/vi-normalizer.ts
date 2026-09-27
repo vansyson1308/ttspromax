@@ -337,7 +337,7 @@ const CURRENCY_AFTER =
 
 /** Counting nouns: "2-3 ngày", "6-7 tấn" are quantities. */
 const COUNTER_AFTER =
-  /^\s*(ngày|tuần|tháng|năm|quý|lần|trận|vòng|lượt|mùa|hiệp|phiên|điểm|bàn|tấn|gói|vụ|nhiệm kỳ|người|triệu|tỷ|tỉ|nghìn|ngàn|giờ|tiếng|phút|giây|mét|ki-lô|xăng-ti|mi-li|héc-ta|lít|độ|con|cái|chiếc|căn|hộ|bước|tầng|suất|món|tuổi|đợt|học sinh|doanh nghiệp|dự án)(?!\p{L})/iu;
+  /^\s*(ngày|tuần|tháng|năm|quý|lần|trận|vòng|lượt|mùa|hiệp|phiên|điểm|bàn|tấn|gói|vụ|nhiệm kỳ|người|triệu|tỷ|tỉ|nghìn|ngàn|giờ|tiếng|phút|giây|mét|ki-lô|xăng-ti|mi-li|héc-ta|lít|độ|con|cái|chiếc|căn|hộ|bước|tầng|suất|món|tuổi|đợt|chuyến|cuộc|bài|câu|học sinh|doanh nghiệp|dự án)(?!\p{L})/iu;
 /** Time/phase nouns that, followed by these, date the event instead: "3-0 năm 2018", "2-1 lượt đi". */
 const TIME_COUNTERS = /^(?:ngày|tuần|tháng|năm|quý|trận|vòng|lượt|mùa|hiệp)$/i;
 const TIME_DEIXIS = /^\s+(?:\d|ngoái|nay|này|trước|sau|tới|đi|về|lượt|ra quân|phụ|đầu|cuối|chót|bù giờ)(?!\p{L})/iu;
@@ -364,16 +364,24 @@ function inScoreContext(before: string, a: string, b: string, after: string): bo
     if (/^chiến/i.test(word) && big) continue;
     const between = window.slice(m.index! + word.length).trim().split(/\s+/).filter(Boolean);
     const restOfClause = after.split(/[,;.!?]/)[0];
-    // A team name right before or after the verb ("Arsenal thất bại 0-2",
-    // "đè bẹp MU 6-3") or later in the clause ("… 3-1 trước Liverpool").
+    // A team next to the verb or the pair:
+    //  - right after the verb ("đè bẹp MU 6-3")
+    //  - before "vượt qua/thất bại/đè bẹp": an acronym ("MU", "HAGL") or a
+    //    two-word name ("Việt Nam") — not for "kết thúc/kết quả", whose
+    //    subjects are usually events ("Festival Huế kết thúc 12-6")
+    //  - an opponent after the pair ("… 0-2 trước Liverpool")
+    //  - "Team X-Y Team" ("Kết quả: Hà Nội 2-1 Viettel")
+    // A place after the pair ("… 30-4 tại Hà Nội") does not count.
     const beforeVerb = window.slice(0, m.index).trim().split(/\s+/).filter(Boolean);
+    const last = beforeVerb[beforeVerb.length - 1] ?? "";
+    const teamBeforeVerb =
+      !/^kết/iu.test(word) &&
+      (/^\p{Lu}{2,}$/u.test(last) || (/^\p{Lu}/u.test(last) && /^\p{Lu}/u.test(beforeVerb[beforeVerb.length - 2] ?? "")));
     const teamNearby =
       /^\p{Lu}/u.test(between[0] ?? "") ||
-      // before the verb: an acronym ("MU", "HAGL") or a two-word name
-      // ("Việt Nam", "Man City") — not a lone capitalised noun like "Tết"
-      /^\p{Lu}{2,}$/u.test(beforeVerb[beforeVerb.length - 1] ?? "") ||
-      (/^\p{Lu}/u.test(beforeVerb[beforeVerb.length - 1] ?? "") && /^\p{Lu}/u.test(beforeVerb[beforeVerb.length - 2] ?? "")) ||
-      /(?<!^)\s\p{Lu}/u.test(restOfClause);
+      teamBeforeVerb ||
+      /(?<!\p{L})(?:trước|với)\s+\p{Lu}/u.test(restOfClause) ||
+      (/^\s*\p{Lu}/u.test(restOfClause) && /\p{Lu}\S*\s*$/u.test(window));
     if (WEAK_SCORE_WORDS.test(word) && !SPORTS_CUE.test(clause) && !SPORTS_CUE.test(restOfClause) && !teamNearby)
       continue;
     // "thắng lớn dịp 30-4", "Thắng lớn 30-4": a big date-like pair only
@@ -414,12 +422,18 @@ function classifyPair(a: string, b: string, before: string, after: string, liste
   if (validDate && partner && parseInt(partner[1]) >= parseInt(partner[2]) && parseInt(partner[2]) <= 12) return "date";
   // Ranges ascend; "Đêm 31-12 người dân…" is still a date.
   // …except on scales and levels: "Thang điểm từ 1-5.", "lớp từ 1-5".
-  const scale = /(?<!\p{L})(?:điểm|thang|số|lớp|mức|cấp|hạng)(?!\p{L})/iu.test(before.split(/[,;.!?]/).pop() ?? "");
+  // (only when the scale word is right before "từ": "Mức lương tăng từ 1-7" is a date)
+  const scale = /(?<!\p{L})(?:điểm|thang|số|lớp|mức|cấp|hạng)(?:\s+\p{L}+)?\s+từ\s*$/iu.test(before);
   if (validDate && !scale && EVENT_OR_FROM_BEFORE.test(before) && DATE_TAIL.test(after)) return "date";
   if (x < y && COUNTER_AFTER.test(after)) return "range";
   if (validDate && EVENT_BEFORE.test(before)) return "date";
-  // Small equal pairs are draws ("Man City 1-1 Arsenal"), not dates.
-  if (x === y && x < 10) return "score";
+  // Small equal pairs are draws ("Man City 1-1 Arsenal"), not dates —
+  // unless a time preposition or bracket leads in ("Từ 1-1 đến nay",
+  // "Hôm nay (1-1),") or "đến nay" follows.
+  if (x === y && x < 10) {
+    const timeLead = /(?:(?<!\p{L})(?:từ|trước|sau|vào|đến|kể từ|tính từ)|\()\s*$/iu.test(before) || /^\s*đến nay/iu.test(after);
+    return timeLead && validDate ? "date" : "score";
+  }
   // Day ≥ month can't be an ascending range: "30-4", "10-10".
   if (validDate && x >= y) return "date";
   if (x < y && a.length <= 6 && b.length <= 6) return "range";
