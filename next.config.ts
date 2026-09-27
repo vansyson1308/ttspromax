@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Edge TTS needs Node.js runtime (WebSocket with custom headers)
+  // Edge TTS needs Node.js runtime (WebSocket with custom headers).
+  // `ws` must not be bundled: webpack breaks its optional native helpers
+  // ("bufferUtil.mask is not a function") and every synthesis hangs.
+  serverExternalPackages: ["ws"],
 
   // Enable WASM support for ONNX Runtime Web and Transformers.js
   webpack: (config) => {

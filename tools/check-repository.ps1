@@ -10,7 +10,7 @@ if ($LASTEXITCODE -ne 0) { throw "Unable to list tracked files." }
 $tooLarge = @()
 foreach ($path in $tracked) {
     if (Test-Path -LiteralPath $path) {
-        $file = Get-Item -LiteralPath $path
+        $file = Get-Item -Force -LiteralPath $path
         if ($file.Length -ge 95MB) {
             $tooLarge += "$path ($([math]::Round($file.Length / 1MB, 1)) MB)"
         }
@@ -29,9 +29,9 @@ $secretPatterns = @(
 $findings = @()
 foreach ($path in $tracked) {
     if (-not (Test-Path -LiteralPath $path)) { continue }
-    $file = Get-Item -LiteralPath $path
+    $file = Get-Item -Force -LiteralPath $path
     if ($file.Length -gt 5MB) { continue }
-    $content = Get-Content -LiteralPath $path -Raw -ErrorAction SilentlyContinue
+    $content = Get-Content -Force -LiteralPath $path -Raw -ErrorAction SilentlyContinue
     foreach ($pattern in $secretPatterns) {
         if ($content -match $pattern) {
             $findings += $path

@@ -2,7 +2,8 @@
 
 Browser-based text-to-speech, AI Pet News, and a repo-local Codex workflow for authorized voice-over production.
 
-- 350+ voices across 80+ languages through Microsoft Edge TTS and Vietnamese ONNX voices.
+- **Voice Studio**: broadcast-grade narration for news, audiobooks, podcasts and ads — style presets, exact pause control, smart breathing, pronunciation dictionary, karaoke transcript and SRT/VTT export.
+- 350+ voices across 80+ languages through Microsoft Edge TTS, optional premium Gemini TTS / ElevenLabs, and Vietnamese ONNX voices.
 - Pet News turns a cat or dog photo into a lip-synced news video.
 - A Codex skill creates authorized cloned narration with Fish Audio or local VoxCPM2 and can integrate it into Remotion.
 
@@ -37,11 +38,16 @@ Fish Audio is preferred when `FISH_API_KEY` is set. Generated audio, reference c
 
 ## Features
 
-### Main TTS page (`/`)
+### Voice Studio (`/`)
 
-- Search voices by country and language.
+- Five delivery styles (Natural, Newscast, Storytelling, Podcast, Advertising) with speed, pitch and pause-length controls.
+- Sentence-level rendering: every sentence is synthesised separately and stitched with precisely measured pauses (Edge TTS rejects SSML `<break>`).
+- Manual pauses anywhere: `[ngắt 1s]`, `[pause 500ms]`, `<break time="1s"/>`.
+- Vietnamese normalisation (numbers, dates, ranges, money, Roman numerals) plus a built-in + personal pronunciation dictionary.
+- "Reading preview" shows exactly what will be spoken and every pause.
+- Karaoke transcript during playback; download MP3/WAV + SRT/VTT subtitles.
+- Optional premium engines: Gemini TTS (`GEMINI_API_KEY`) and ElevenLabs via MakeVoice.
 - Vietnamese ONNX voices run client-side when their optional local model files are present.
-- Other voices stream through Edge TTS or the optional MakeVoice integration.
 - A 3D avatar can lip-sync generated audio with pitch shifting.
 
 ### Pet News (`/pet-news`)
@@ -63,7 +69,9 @@ Fish Audio is preferred when `FISH_API_KEY` is set. Generated audio, reference c
 | Detection | TensorFlow.js and COCO-SSD |
 | Recording | MediaRecorder and `fix-webm-duration` |
 
-See `AGENTS.md` for the source map and repository conventions.
+See `AGENTS.md` for the source map and repository conventions, and `docs/ROADMAP.md` for the market research and product roadmap.
+
+Run the unit tests with `npm test`.
 
 ## Configuration
 
@@ -72,6 +80,7 @@ Copy `.env.example` to `.env.local`. Do not commit real credentials.
 ```text
 MAKEVOICE_API_KEY       # ElevenLabs voices via MakeVoice (optional)
 TIKTOK_TTS_PROXY        # TikTok proxy override (optional)
+GEMINI_API_KEY          # Premium Gemini TTS voices (optional)
 FISH_API_KEY            # Codex cloud voice cloning (optional)
 NEXT_TELEMETRY_DISABLED # Disable Next.js telemetry
 ```

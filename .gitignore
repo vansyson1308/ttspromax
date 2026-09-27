@@ -54,3 +54,4 @@ public/models/vi/
 # Local source documents and generated QC narration.
 /254-ndcp*
 /dev-server*.log
+tsconfig.tsbuildinfo

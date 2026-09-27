@@ -48,6 +48,28 @@ export async function readNdjsonAudioStream(
   const audioChunks: ArrayBuffer[] = [];
   let finalMessage: NdjsonMessage | undefined;
 
+  const handleLine = (line: string) => {
+    if (!line.trim()) return;
+    let msg: NdjsonMessage;
+    try {
+      msg = JSON.parse(line);
+    } catch (parseErr) {
+      if (parseErr instanceof SyntaxError) return;
+      throw parseErr;
+    }
+    handlers?.onMessage?.(msg);
+    if (msg.status === "audio_chunk" && msg.chunk) {
+      const ab = base64ToArrayBuffer(msg.chunk);
+      audioChunks.push(ab);
+      handlers?.onAudioChunk?.(ab);
+    } else if (msg.status === "done") {
+      finalMessage = msg;
+      handlers?.onDone?.(msg);
+    } else if (msg.status === "error") {
+      handlers?.onError?.(msg);
+    }
+  };
+
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -55,28 +77,13 @@ export async function readNdjsonAudioStream(
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split("\n");
     buffer = lines.pop() || "";
+    lines.forEach(handleLine);
+  }
+  // Plain JSON error responses (4xx/5xx) have no trailing newline.
+  handleLine(buffer + decoder.decode());
 
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        const msg: NdjsonMessage = JSON.parse(line);
-        handlers?.onMessage?.(msg);
-
-        if (msg.status === "audio_chunk" && msg.chunk) {
-          const ab = base64ToArrayBuffer(msg.chunk);
-          audioChunks.push(ab);
-          handlers?.onAudioChunk?.(ab);
-        } else if (msg.status === "done") {
-          finalMessage = msg;
-          handlers?.onDone?.(msg);
-        } else if (msg.status === "error") {
-          handlers?.onError?.(msg);
-        }
-      } catch (parseErr) {
-        if (parseErr instanceof SyntaxError) continue;
-        throw parseErr;
-      }
-    }
+  if (!response.ok && !finalMessage) {
+    handlers?.onError?.({ status: "error", message: `Request failed (HTTP ${response.status})` });
   }
 
   return { audioChunks, finalMessage };
