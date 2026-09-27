@@ -150,7 +150,10 @@ function convertTimes(text: string): string {
   let t = text;
   // Hour ranges: "8h-17h", "7h30-9h" → "tám giờ đến mười bảy giờ"
   const hour = (h: string, min?: string) =>
-    `${numberToVietnamese(h)} giờ${min ? " " + numberToVietnamese(min) : ""}`;
+    `${numberToVietnamese(h)} giờ${min && parseInt(min) > 0 ? " " + numberToVietnamese(min) : ""}`;
+  t = t.replace(/(?<![\d:])(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})(?![\d:])/g, (m, h1, m1, h2, m2) =>
+    parseInt(h1) <= 24 && parseInt(h2) <= 24 ? `${hour(h1, m1)} đến ${hour(h2, m2)}` : m
+  );
   t = t.replace(/(?<!\d)(\d{1,2})h(\d{2})?\s*[-–]\s*(\d{1,2})h(\d{2})?(?![a-zà-ỹ\d])/gi, (m, h1, m1, h2, m2) =>
     parseInt(h1) <= 24 && parseInt(h2) <= 24 ? `${hour(h1, m1)} đến ${hour(h2, m2)}` : m
   );
@@ -221,8 +224,9 @@ function convertDates(text: string): string {
   // ("ngày 2-9", "Chiều 5-6"), when listed with another date ("30-4 và
   // 1-5", "từ 1-5 đến 10-5"), or when day > month outside a score context;
   // otherwise "2-3 ngày" is a range and "2-1" a score.
-  // (Not after "7h": "7h30-9h" is an hour range handled by convertTimes.)
-  t = t.replace(/(?<![\d.,-]|\dh)(\d{1,2})([/-])(\d{1,2})(?![/-]?\d)/g, (_m, d, sep, m, offset, full) => {
+  // (Not inside times: "7h30-9h", "7H30-9H", "7:30-9:00" are hour ranges
+  // handled by convertTimes.)
+  t = t.replace(/(?<![\d.,:-]|\d[hH])(\d{1,2})([/-])(\d{1,2})(?![/-]?\d|:\d)/g, (_m, d, sep, m, offset, full) => {
     const after = full.slice(offset + _m.length);
     const before = full.slice(0, offset);
     if (/^\s*%/.test(after)) return _m;
@@ -242,6 +246,8 @@ function convertDates(text: string): string {
       const afterKeyword =
         new RegExp(`${DATE_KEYWORDS}\\s*$`, "iu").test(before) ||
         (new RegExp(`${TIME_OF_DAY}\\s*$`, "iu").test(before) && DATELINE_END.test(after));
+      // Scores ("thắng 3-1 và 2-1") are never dates unless a date word precedes.
+      if (!afterKeyword && inScoreContext(before, d, m, after)) return _m;
       const listedAfterDate = new RegExp(
         `${DATE_KEYWORDS}\\s*\\d{1,2}-\\d{1,2}\\s*(?:và|,|đến|tới|hoặc)\\s*$`,
         "iu",
@@ -253,7 +259,7 @@ function convertDates(text: string): string {
       const prevPair = before.match(/(\d{1,2})-(\d{1,2})\s*(?:và|,|đến|tới|hoặc|-)\s*$/);
       const listedAfterPlainDate =
         !!prevPair && parseInt(prevPair[1]) > parseInt(prevPair[2]) && parseInt(prevPair[2]) <= 12;
-      const dayAfterMonth = parseInt(d) > parseInt(m) && !inScoreContext(before, d, m);
+      const dayAfterMonth = parseInt(d) > parseInt(m);
       if (!afterKeyword && !listedAfterDate && !listedAfterPlainDate && !listedBeforeDate && !dayAfterMonth) return _m;
     }
     if (isValidDay(parseInt(d), parseInt(m))) return dayWords(d, m);
@@ -290,21 +296,32 @@ const DATELINE_END = /^\s*(?:[,.;:!?)]|$|\p{Lu})/u;
 
 /** Match-report vocabulary: "thắng HAGL 2-1", "Thua 0-2", "tỷ số chung cuộc 3-0". */
 const SCORE_WORDS =
-  /(?<!\p{L})(?:t[ỷỉ] số|chung cuộc|cách biệt|đánh bại|hạ gục|dẫn trước|chiến thắng|thắng(?! lợi)|thua(?! lỗ)|(?:cầm |gỡ )?h(?:òa|oà)(?! (?:bình|giải|hợp|nhập|thuận|vốn)))(?!\p{L})/giu;
+  /(?<!\p{L})(?:t[ỷỉ] số|chung cuộc|cách biệt|đánh bại|hạ gục|dẫn trước|chiến thắng|thắng(?! (?:lợi|lớn|thầu|cử|kiện))|thua(?! (?:lỗ|kiện))|(?:cầm |gỡ )?h(?:òa|oà)(?! (?:bình|giải|hợp|nhập|thuận|vốn)))(?!\p{L})/giu;
+
+/** Score words that are also given names / place names ("Hòa Phát", "Thắng"). */
+const NAME_CAPABLE = /^(?:h(?:òa|oà)|thắng)$/iu;
+
+/** A counting noun after the pair makes it a quantity: "2-3 ngày", "6-7 tấn". */
+const COUNTER_AFTER =
+  /^\s*(?:ngày|tuần|tháng|năm|quý|lần|trận|vòng|phiên|điểm|bàn|tấn|gói|vụ|nhiệm kỳ|người|triệu|tỷ|tỉ|nghìn|ngàn|giờ|tiếng|phút|giây|mét|ki-lô|xăng-ti|mi-li|héc-ta|lít|độ|con|cái|chiếc|căn|hộ|lượt|bước|tầng|suất|món|học sinh|doanh nghiệp|dự án)(?!\p{L})/iu;
 
 /**
- * Is "a-b" a match score? Scores are small numbers, preceded within six
- * words by a score word. A capitalised score word next to another
- * capitalised word is a name ("Hòa Phát", "Khánh Hòa"), not a verb, and
- * "Chiến thắng 30-4" (the anniversary) fails the small-number test.
+ * Is "a-b" a match score? Needs a score word within the last six words of
+ * the same clause (text after the last , ; : . ! ?) and no counting noun
+ * after the pair. A capitalised "Hòa"/"Thắng" next to another capitalised
+ * word is a name, and "chiến thắng" only takes small numbers, so
+ * "Chiến thắng 30-4" (the anniversary) stays a date.
  */
-function inScoreContext(before: string, a: string, b: string): boolean {
-  if (parseFloat(a) >= 20 || parseFloat(b) >= 20) return false;
-  const window = before.trim().split(/\s+/).slice(-6).join(" ");
+function inScoreContext(before: string, a: string, b: string, after: string): boolean {
+  if (COUNTER_AFTER.test(after)) return false;
+  const clause = before.split(/[,;:.!?]/).pop() ?? "";
+  const window = clause.trim().split(/\s+/).slice(-6).join(" ");
   for (const m of window.matchAll(SCORE_WORDS)) {
-    if (/^\p{Lu}/u.test(m[0])) {
+    const word = m[0];
+    if (/^chiến/i.test(word) && (parseFloat(a) >= 20 || parseFloat(b) >= 20)) continue;
+    if (/^\p{Lu}/u.test(word) && NAME_CAPABLE.test(word)) {
       const prev = window.slice(0, m.index).trimEnd().split(" ").pop() ?? "";
-      const next = window.slice(m.index! + m[0].length).trimStart().split(" ")[0] ?? "";
+      const next = window.slice(m.index! + word.length).trimStart().split(" ")[0] ?? "";
       if (/^\p{Lu}/u.test(prev) || /^\p{Lu}/u.test(next)) continue;
     }
     return true;
@@ -323,8 +340,9 @@ function convertRanges(text: string): string {
     /(?<![\d.,\-–—])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)(?![\d/%]|,\d|\s*[-–—]\s*\d)/g,
     (m, a, b, offset, full) => {
       const before = full.slice(0, offset);
+      const after = full.slice(offset + m.length);
       const integers = !a.includes(",") && !b.includes(",");
-      if (integers && inScoreContext(before, a, b)) return `${numberToVietnamese(a)} ${numberToVietnamese(b)}`;
+      if (integers && inScoreContext(before, a, b, after)) return `${numberToVietnamese(a)} ${numberToVietnamese(b)}`;
       if (/(?:số|mã|ký hiệu|kí hiệu|No\.?)\s*$/i.test(before)) return m;
       if (a.length > 6 || b.length > 6 || numericValue(a) >= numericValue(b)) return m;
       return `${decimalToVietnamese(a)} đến ${decimalToVietnamese(b)}`;
