@@ -112,7 +112,9 @@ function caseless(s: string): string {
     .map((ch) => {
       const lo = ch.toLowerCase();
       const up = ch.toUpperCase();
-      return lo !== up && lo.length === 1 && up.length === 1 ? `[${lo}${up}]` : escapeRegex(ch);
+      if (lo === up || lo.length !== 1 || up.length !== 1) return escapeRegex(ch);
+      // Include the character itself: titlecase letters ("ǅ") differ from both.
+      return `[${[...new Set([ch, lo, up])].join("")}]`;
     })
     .join("");
 }
@@ -145,8 +147,9 @@ function compile(entries: LexiconEntry[]): Matcher | null {
   const folded = new Map<string, Target>();
   const forms: Array<{ from: string; cs: boolean }> = [];
   entries.forEach((e, order) => {
-    const from = e.from.trim();
-    const to = e.to.trim();
+    // Spoken text is NFC; entries typed/pasted in NFD must still match.
+    const from = e.from.normalize("NFC").trim();
+    const to = e.to.normalize("NFC").trim();
     if (!from || !to) return;
     const cs = e.caseSensitive ?? isAcronym(from);
     const map = cs ? exact : folded;
@@ -221,8 +224,8 @@ export function sanitizeLexicon(raw: unknown, max = 500): LexiconEntry[] {
     if (!item || typeof item !== "object") continue;
     const { from, to, caseSensitive } = item as Record<string, unknown>;
     if (typeof from !== "string" || typeof to !== "string") continue;
-    const f = from.trim().slice(0, 80);
-    const tt = to.trim().slice(0, 200);
+    const f = from.normalize("NFC").trim().slice(0, 80);
+    const tt = to.normalize("NFC").trim().slice(0, 200);
     if (!f || !tt) continue;
     out.push({ from: f, to: tt, caseSensitive: typeof caseSensitive === "boolean" ? caseSensitive : undefined });
     if (out.length >= max) break;

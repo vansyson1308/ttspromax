@@ -177,10 +177,24 @@ export function formatPitch(pitch: number): string {
   return `${p >= 0 ? "+" : ""}${p}Hz`;
 }
 
-/** User entries first (they win), then built-ins the user didn't override. */
+const mergedCache: Record<ScriptLang, WeakMap<LexiconEntry[], LexiconEntry[]>> = {
+  vi: new WeakMap(),
+  en: new WeakMap(),
+};
+
+/**
+ * User entries first, then built-ins. applyLexicon lets the earlier entry
+ * win when both match the same text, so user overrides take precedence
+ * while differently-cased built-ins stay available. The result is cached per
+ * input array so the compiled regex is reused across plans.
+ */
 export function mergeLexicons(user: LexiconEntry[], lang: ScriptLang): LexiconEntry[] {
-  const userKeys = new Set(user.map((e) => e.from.trim().toLowerCase()));
-  return [...user, ...builtinLexicon(lang).filter((e) => !userKeys.has(e.from.toLowerCase()))];
+  let merged = mergedCache[lang].get(user);
+  if (!merged) {
+    merged = [...user, ...builtinLexicon(lang)];
+    mergedCache[lang].set(user, merged);
+  }
+  return merged;
 }
 
 /**
