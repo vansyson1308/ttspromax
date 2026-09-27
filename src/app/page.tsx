@@ -285,18 +285,25 @@ export default function Home() {
     });
     const cues: TimedCue[] = [];
     let format = "mp3" as "mp3" | "wav";
+    let finished = false;
     const { audioChunks } = await readNdjsonAudioStream(res, {
       onMessage: (msg: NdjsonMessage) => {
         if (msg.status === "progress") setProgress({ done: Number(msg.done), total: Number(msg.total) });
         if (msg.status === "cue" && msg.cue) cues.push(msg.cue as TimedCue);
-        if (msg.status === "done" && msg.format === "wav") format = "wav";
+        if (msg.status === "done") {
+          finished = true;
+          if (msg.format === "wav") format = "wav";
+        }
       },
       onError: (msg) => {
         throw new Error(msg.message || "Generation failed");
       },
     });
+    // A stream cut off before "done" (server timeout, dropped connection)
+    // would otherwise play partial audio as if it were complete.
+    if (!finished) throw new Error(tr("Kết nối bị ngắt giữa chừng, vui lòng thử lại.", "The connection was cut off, please try again."));
     return { audioChunks, cues, format };
-  }, []);
+  }, [tr]);
 
   const generateSpeech = useCallback(async () => {
     if (!text.trim() || !selectedVoice || isGenerating) return;
@@ -320,6 +327,7 @@ export default function Home() {
 
       if (selectedVoice.type === "onnx") {
         await initOnnxWorker(selectedVoice.voice_id);
+        abort.signal.throwIfAborted(); // Stop pressed while the model loaded
         const worker = workerRef.current;
         if (!worker) throw new Error("Worker not initialized");
         const prepared = mapPauseTags(applyLexicon(text.trim(), lexicon), () => ", ");
@@ -336,7 +344,17 @@ export default function Home() {
             setModelLoaded(null);
             reject(new DOMException("Stopped", "AbortError"));
           };
-          const settle = () => abort.signal.removeEventListener("abort", onAbort);
+          const onCrash = (e: ErrorEvent) => {
+            worker.removeEventListener("message", onMessage);
+            settle();
+            workerRef.current = null;
+            setModelLoaded(null);
+            reject(new Error(e.message || "Voice model crashed"));
+          };
+          const settle = () => {
+            abort.signal.removeEventListener("abort", onAbort);
+            worker.removeEventListener("error", onCrash);
+          };
           const onMessage = (e: MessageEvent) => {
             const { status } = e.data;
             if (status === "stream") chunks.push(e.data.chunk.audio);
@@ -351,6 +369,7 @@ export default function Home() {
             }
           };
           abort.signal.addEventListener("abort", onAbort, { once: true });
+          worker.addEventListener("error", onCrash);
           worker.addEventListener("message", onMessage);
           worker.postMessage({ type: "generate", text: prepared, voice: 0, speed: 1 + settings.rate / 100 });
         });
