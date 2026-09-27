@@ -158,18 +158,34 @@ export async function renderPlanWithGemini(
   const blocks = groupBlocks(plan.segments);
   const style = direction(plan.style, plan.lang, opts.direction);
 
-  // Bounded parallelism, results kept in order.
+  // Bounded parallelism, results kept in order. The first failure (or a
+  // client cancel) aborts the remaining paid requests.
+  const abort = new AbortController();
+  const onCancel = () => abort.abort();
+  opts.signal?.addEventListener("abort", onCancel);
   const results: Awaited<ReturnType<typeof synthesizeBlock>>[] = new Array(blocks.length);
   let next = 0;
   let done = 0;
   const worker = async () => {
-    while (next < blocks.length) {
+    while (next < blocks.length && !abort.signal.aborted) {
       const i = next++;
-      results[i] = await synthesizeBlock(blocks[i].text, opts.voice, style, opts.signal);
+      results[i] = await synthesizeBlock(blocks[i].text, opts.voice, style, abort.signal);
       opts.onProgress?.(++done, blocks.length);
     }
   };
-  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, blocks.length) }, worker));
+  try {
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, blocks.length) }, () =>
+        worker().catch((err) => {
+          abort.abort();
+          throw err;
+        }),
+      ),
+    );
+  } finally {
+    opts.signal?.removeEventListener("abort", onCancel);
+  }
+  if (abort.signal.aborted) throw new Error("Gemini render cancelled");
 
   const sampleRate = results[0]?.sampleRate ?? 24_000;
   const chunks: Int16Array[] = [];

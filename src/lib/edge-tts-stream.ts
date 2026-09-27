@@ -69,6 +69,9 @@ function parseHeaders(block: string): Record<string, string> {
 
 function escapeXml(text: string): string {
   return text
+    // XML 1.0 forbids most C0 control chars; one pasted \x01 would make Edge
+    // reject the whole request as invalid SSML.
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " ")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -102,6 +105,8 @@ export interface WordMark {
 export interface EdgeClip {
   audio: Buffer;
   words: WordMark[];
+  /** False when the socket closed before turn.end (audio may be truncated). */
+  complete: boolean;
 }
 
 export interface EdgeRequest {
@@ -158,7 +163,12 @@ function cacheGet(key: string): EdgeClip | undefined {
 }
 
 function cachePut(key: string, clip: EdgeClip) {
-  if (clip.audio.length > CACHE_BYTES / 8) return;
+  if (!clip.complete || clip.audio.length > CACHE_BYTES / 8) return;
+  const existing = cache.get(key);
+  if (existing) {
+    cache.delete(key);
+    cacheBytes -= existing.audio.length;
+  }
   cache.set(key, clip);
   cacheBytes += clip.audio.length;
   while (cacheBytes > CACHE_BYTES && cache.size) {
@@ -181,7 +191,7 @@ function requestOnce(ssml: string): Promise<EdgeClip> {
     const words: WordMark[] = [];
     let settled = false;
 
-    const finish = (err: EdgeTtsError | null) => {
+    const finish = (err: EdgeTtsError | null, complete = true) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
@@ -191,7 +201,7 @@ function requestOnce(ssml: string): Promise<EdgeClip> {
         /* already closed */
       }
       if (err) reject(err);
-      else resolve({ audio: Buffer.concat(audio), words });
+      else resolve({ audio: Buffer.concat(audio), words, complete });
     };
 
     const timer = setTimeout(() => finish(new EdgeTtsError("Edge TTS timeout", true)), TIMEOUT_MS);
@@ -255,7 +265,7 @@ function requestOnce(ssml: string): Promise<EdgeClip> {
       if (code === 1007) {
         finish(new EdgeTtsError(`Edge TTS rejected the request: ${reason.toString() || "invalid SSML"}`, false));
       } else if (audio.length) {
-        finish(null);
+        finish(null, false); // usable, but never cached
       } else {
         finish(new EdgeTtsError(`Edge TTS connection closed (${code})`, true));
       }
@@ -265,6 +275,7 @@ function requestOnce(ssml: string): Promise<EdgeClip> {
   });
 }
 
+const inflight = new Map<string, Promise<EdgeClip>>();
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -281,7 +292,15 @@ export async function synthesizeClip(req: EdgeRequest, retries = 3): Promise<Edg
   const key = cacheKey(full);
   const hit = cacheGet(key);
   if (hit) return hit;
+  // Identical sentences requested concurrently share one socket.
+  const running = inflight.get(key);
+  if (running) return running;
+  const job = synthesizeUncached(full, key, retries).finally(() => inflight.delete(key));
+  inflight.set(key, job);
+  return job;
+}
 
+async function synthesizeUncached(full: Required<EdgeRequest>, key: string, retries: number): Promise<EdgeClip> {
   const ssml = buildSsml(full.text, full.voice, full.rate, full.pitch, full.volume);
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {

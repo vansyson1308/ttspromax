@@ -23,6 +23,10 @@ import { formatPitch, formatRate, type ScriptPlan } from "./planner";
 
 /** Audio kept after the last word's end (release + MP3 decoder delay). */
 const TAIL_KEEP_MS = 140;
+/** Shortest tail we ever keep, so word endings are never clipped. */
+const MIN_TAIL_MS = 48;
+/** Typical Edge lead-in before the first word (~87–125 ms measured). */
+const EXPECTED_LEAD_MS = 100;
 /** Tail kept on the final sentence so the file doesn't end abruptly. */
 const FINAL_TAIL_MS = 450;
 /** Sentences synthesised ahead of the one currently being emitted. */
@@ -107,8 +111,14 @@ export async function* renderPlanWithEdge(
       }
     }
 
+    // Short planned pauses (ads, clause breaks, pauseScale < 1) need a shorter
+    // tail, because the next clip's own lead-in also counts toward the gap.
+    // Effective floor ≈ MIN_TAIL_MS + lead-in ≈ 150 ms.
     const isLast = i === segs.length - 1;
-    const keepUntil = words.length ? lastEndMs + (isLast ? FINAL_TAIL_MS : TAIL_KEEP_MS) : stream.durationMs;
+    const tail = isLast
+      ? FINAL_TAIL_MS
+      : Math.max(MIN_TAIL_MS, Math.min(TAIL_KEEP_MS, segs[i + 1].pauseBeforeMs - EXPECTED_LEAD_MS));
+    const keepUntil = words.length ? lastEndMs + tail : stream.durationMs;
     const kept = sliceMp3(bytes, stream, keepUntil);
     const keptMs = Math.min(stream.frames.length, Math.max(1, Math.ceil(keepUntil / perFrame))) * perFrame;
     const clipStart = cursorMs;
