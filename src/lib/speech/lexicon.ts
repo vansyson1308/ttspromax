@@ -206,8 +206,9 @@ export function applyLexicon(text: string, entries: LexiconEntry[]): string {
     // "TP.Hà Nội" → "thành phố Hà Nội": re-insert the space the dot stood in for.
     const glue = !hit.endsWord && isWordChar(text[end]) ? " " : "";
     // "30°C" → "30 độ C": same on the left for entries starting with punctuation.
-    const lead = !hit.startsWord && isWordChar(text[i - 1]) ? " " : "";
-    out += text.slice(last, i) + lead + hit.to + glue;
+    const pending = out + text.slice(last, i);
+    const lead = !hit.startsWord && isWordChar(pending[pending.length - 1]) ? " " : "";
+    out = pending + lead + hit.to + glue;
     last = i = end;
   }
   return out + text.slice(last);
