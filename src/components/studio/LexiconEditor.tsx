@@ -5,6 +5,9 @@ import type { LexiconEntry } from "@/lib/speech/lexicon";
 import { VI_BUILTIN_LEXICON } from "@/lib/speech/lexicon";
 import { useTr } from "./i18n";
 
+/** Matches the API limit (api-validators.ts). */
+export const MAX_LEXICON_ENTRIES = 500;
+
 interface Props {
   entries: LexiconEntry[];
   onChange: (entries: LexiconEntry[]) => void;
@@ -21,6 +24,7 @@ export default function LexiconEditor({ entries, onChange }: Props) {
     const f = from.trim();
     const t = to.trim();
     if (!f || !t) return;
+    if (entries.length >= MAX_LEXICON_ENTRIES && !entries.some((e) => e.from === f)) return;
     onChange([...entries.filter((e) => e.from !== f), { from: f, to: t }]);
     setFrom("");
     setTo("");
@@ -57,13 +61,18 @@ export default function LexiconEditor({ entries, onChange }: Props) {
         />
         <button
           type="submit"
-          disabled={!from.trim() || !to.trim()}
+          disabled={!from.trim() || !to.trim() || entries.length >= MAX_LEXICON_ENTRIES}
           className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-bold disabled:opacity-40"
         >
           {tr("Thêm", "Add")}
         </button>
       </form>
 
+      {entries.length >= MAX_LEXICON_ENTRIES && (
+        <p className="text-[11px] text-amber-600 dark:text-amber-400">
+          {tr(`Đã đạt tối đa ${MAX_LEXICON_ENTRIES} mục.`, `Maximum of ${MAX_LEXICON_ENTRIES} entries reached.`)}
+        </p>
+      )}
       {entries.length > 0 && (
         <ul className="divide-y divide-gray-100 dark:divide-gray-800 max-h-48 overflow-y-auto rounded-lg border border-gray-100 dark:border-gray-800">
           {entries.map((e) => (

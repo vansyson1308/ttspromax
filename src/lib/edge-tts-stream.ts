@@ -131,14 +131,18 @@ const waiters: Array<() => void> = [];
 
 async function withSlot<T>(fn: () => Promise<T>): Promise<T> {
   if (active >= MAX_CONCURRENCY) {
+    // The releasing caller hands its slot over directly (see finally), so a
+    // newcomer can't grab it between release and wake-up.
     await new Promise<void>((resolve) => waiters.push(resolve));
+  } else {
+    active++;
   }
-  active++;
   try {
     return await fn();
   } finally {
-    active--;
-    waiters.shift()?.();
+    const next = waiters.shift();
+    if (next) next();
+    else active--;
   }
 }
 

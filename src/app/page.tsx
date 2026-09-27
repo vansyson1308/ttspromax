@@ -7,13 +7,13 @@ import PitchControl from "@/components/avatar/PitchControl";
 import type { AvatarHandle } from "@/components/avatar/AvatarContainer";
 import { setPitch as setAudioPitch } from "@/lib/audio-pipeline";
 import { readNdjsonAudioStream, type NdjsonMessage } from "@/lib/ndjson-audio-stream";
-import { planScript, type ScriptLang } from "@/lib/speech/planner";
-import { applyLexicon, type LexiconEntry } from "@/lib/speech/lexicon";
+import { planScript, STYLE_IDS, type ScriptLang } from "@/lib/speech/planner";
+import { applyLexicon, sanitizeLexicon, type LexiconEntry } from "@/lib/speech/lexicon";
 import { mapPauseTags } from "@/lib/speech/segmenter";
 import { toSrt, toVtt, type TimedCue } from "@/lib/speech/subtitles";
 import { LEGACY_MAX_CHARS, TTS_MAX_CHARS } from "@/lib/speech/limits";
 import StylePanel, { DEFAULT_SETTINGS, type StudioSettings } from "@/components/studio/StylePanel";
-import LexiconEditor from "@/components/studio/LexiconEditor";
+import LexiconEditor, { MAX_LEXICON_ENTRIES } from "@/components/studio/LexiconEditor";
 import ReadingPreview from "@/components/studio/ReadingPreview";
 import Transcript from "@/components/studio/Transcript";
 import { SAMPLE_SCRIPTS } from "@/components/studio/samples";
@@ -87,8 +87,23 @@ export default function Home() {
   const [voiceSearch, setVoiceSearch] = useState("");
 
   const [text, setText] = usePersistentState("studio.draft", "");
-  const [settings, setSettings] = usePersistentState<StudioSettings>("studio.settings", DEFAULT_SETTINGS);
-  const [lexicon, setLexicon] = usePersistentState<LexiconEntry[]>("studio.lexicon", []);
+  const [storedSettings, setSettings] = usePersistentState<StudioSettings>("studio.settings", DEFAULT_SETTINGS);
+  const [storedLexicon, setLexicon] = usePersistentState<LexiconEntry[]>("studio.lexicon", []);
+  // localStorage may hold values from an older build; never send the API
+  // something its schema rejects.
+  const settings = useMemo<StudioSettings>(() => {
+    const clamp = (v: unknown, lo: number, hi: number, d: number) =>
+      typeof v === "number" && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d;
+    const s = { ...DEFAULT_SETTINGS, ...storedSettings };
+    return {
+      style: STYLE_IDS.includes(s.style) ? s.style : DEFAULT_SETTINGS.style,
+      rate: clamp(s.rate, -50, 100, 0),
+      pitch: clamp(s.pitch, -50, 50, 0),
+      pauseScale: clamp(s.pauseScale, 0.3, 3, 1),
+      phrasing: typeof s.phrasing === "boolean" ? s.phrasing : true,
+    };
+  }, [storedSettings]);
+  const lexicon = useMemo(() => sanitizeLexicon(storedLexicon, MAX_LEXICON_ENTRIES), [storedLexicon]);
   const [panel, setPanel] = useState<"style" | "lexicon" | "preview">("style");
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -310,6 +325,13 @@ export default function Home() {
         const prepared = mapPauseTags(applyLexicon(text.trim(), lexicon), () => ", ");
         blob = await new Promise<Blob>((resolve, reject) => {
           const chunks: Blob[] = [];
+          // The worker can't be interrupted mid-inference: stop = terminate it.
+          abort.signal.addEventListener("abort", () => {
+            worker.terminate();
+            workerRef.current = null;
+            setModelLoaded(null);
+            reject(new DOMException("Stopped", "AbortError"));
+          });
           const onMessage = (e: MessageEvent) => {
             const { status } = e.data;
             if (status === "stream") chunks.push(e.data.chunk.audio);
