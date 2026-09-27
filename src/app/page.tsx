@@ -216,7 +216,7 @@ export default function Home() {
   // ─── ONNX worker (client-side Vietnamese) ─────────────────────────────────
 
   const initOnnxWorker = useCallback(
-    async (modelName: string) => {
+    async (modelName: string, signal: AbortSignal) => {
       if (modelLoaded === modelName && workerRef.current) return;
       setModelLoading(true);
       workerRef.current?.terminate();
@@ -225,23 +225,34 @@ export default function Home() {
       return new Promise<void>((resolve, reject) => {
         const worker = new Worker("/workers/vi-tts-worker.js", { type: "module" });
         workerRef.current = worker;
+        const cleanup = () => {
+          worker.removeEventListener("message", onReady);
+          worker.removeEventListener("error", onError);
+          signal.removeEventListener("abort", onAbort);
+          setModelLoading(false);
+        };
+        const fail = (err: Error) => {
+          cleanup();
+          worker.terminate();
+          if (workerRef.current === worker) workerRef.current = null;
+          setModelLoaded(null);
+          reject(err);
+        };
         const onReady = (e: MessageEvent) => {
           if (e.data.status === "ready") {
-            worker.removeEventListener("message", onReady);
+            cleanup();
             setModelLoaded(modelName);
-            setModelLoading(false);
             resolve();
           } else if (e.data.status === "error") {
-            worker.removeEventListener("message", onReady);
-            setModelLoading(false);
-            reject(new Error(e.data.data || "Failed to load model"));
+            fail(new Error(e.data.data || "Failed to load model"));
           }
         };
+        const onError = (err: ErrorEvent) => fail(new Error(err.message || "Failed to load model"));
+        // Stop while the model downloads: abandon the load immediately.
+        const onAbort = () => fail(new DOMException("Stopped", "AbortError"));
         worker.addEventListener("message", onReady);
-        worker.addEventListener("error", (err) => {
-          setModelLoading(false);
-          reject(new Error(err.message));
-        });
+        worker.addEventListener("error", onError);
+        signal.addEventListener("abort", onAbort, { once: true });
         worker.postMessage({ type: "init", model: modelName });
       });
     },
@@ -326,8 +337,8 @@ export default function Home() {
       let format: "mp3" | "wav" = "mp3";
 
       if (selectedVoice.type === "onnx") {
-        await initOnnxWorker(selectedVoice.voice_id);
-        abort.signal.throwIfAborted(); // Stop pressed while the model loaded
+        await initOnnxWorker(selectedVoice.voice_id, abort.signal);
+        abort.signal.throwIfAborted(); // Stop pressed before the load started
         const worker = workerRef.current;
         if (!worker) throw new Error("Worker not initialized");
         const prepared = mapPauseTags(applyLexicon(text.trim(), lexicon), () => ", ");
@@ -347,6 +358,7 @@ export default function Home() {
           const onCrash = (e: ErrorEvent) => {
             worker.removeEventListener("message", onMessage);
             settle();
+            worker.terminate();
             workerRef.current = null;
             setModelLoaded(null);
             reject(new Error(e.message || "Voice model crashed"));

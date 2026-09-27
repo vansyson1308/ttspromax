@@ -118,6 +118,8 @@ interface Candidate {
   cs: boolean;
   /** Needs a token boundary after it (ends in a letter/digit). */
   endsWord: boolean;
+  /** Needs a token boundary before it (starts with a letter/digit). */
+  startsWord: boolean;
   /** Position in the entry list — lower wins ties (user entries first). */
   order: number;
 }
@@ -142,7 +144,15 @@ function compile(entries: LexiconEntry[]): Map<string, Candidate[]> | null {
     seen.add(key);
     const first = from[0].toLowerCase();
     const list = byFirst.get(first) ?? [];
-    list.push({ from, lower: from.toLowerCase(), to, cs, endsWord: isWordChar(from[from.length - 1]), order });
+    list.push({
+      from,
+      lower: from.toLowerCase(),
+      to,
+      cs,
+      endsWord: isWordChar(from[from.length - 1]),
+      startsWord: isWordChar(from[0]),
+      order,
+    });
     byFirst.set(first, list);
   });
   if (!byFirst.size) return null;
@@ -158,8 +168,10 @@ function compiled(entries: LexiconEntry[]) {
   return compiledCache.get(entries) ?? null;
 }
 
-function matchAt(text: string, i: number, list: Candidate[]): Candidate | null {
+function matchAt(text: string, i: number, list: Candidate[], midWord: boolean): Candidate | null {
   for (const c of list) {
+    // Mid-word, only entries starting with punctuation may match ("30°C").
+    if (midWord && c.startsWord) continue;
     const slice = text.slice(i, i + c.from.length);
     if (slice.length !== c.from.length) continue;
     if (c.cs ? slice !== c.from : slice.toLowerCase() !== c.lower) continue;
@@ -184,8 +196,8 @@ export function applyLexicon(text: string, entries: LexiconEntry[]): string {
   let last = 0;
   let i = 0;
   while (i < text.length) {
-    const list = !isWordChar(text[i - 1]) ? index.get(text[i].toLowerCase()) : undefined;
-    const hit = list ? matchAt(text, i, list) : null;
+    const list = index.get(text[i].toLowerCase());
+    const hit = list ? matchAt(text, i, list, isWordChar(text[i - 1])) : null;
     if (!hit) {
       i++;
       continue;
@@ -193,7 +205,9 @@ export function applyLexicon(text: string, entries: LexiconEntry[]): string {
     const end = i + hit.from.length;
     // "TP.Hà Nội" → "thành phố Hà Nội": re-insert the space the dot stood in for.
     const glue = !hit.endsWord && isWordChar(text[end]) ? " " : "";
-    out += text.slice(last, i) + hit.to + glue;
+    // "30°C" → "30 độ C": same on the left for entries starting with punctuation.
+    const lead = !hit.startsWord && isWordChar(text[i - 1]) ? " " : "";
+    out += text.slice(last, i) + lead + hit.to + glue;
     last = i = end;
   }
   return out + text.slice(last);
