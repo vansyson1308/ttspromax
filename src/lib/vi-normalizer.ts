@@ -136,6 +136,9 @@ const SHORT_MULTIPLIER: Record<string, string> = { k: "nghìn", K: "nghìn", m: 
 function convertCurrency(text: string): string {
   let t = text;
   const amount = (n: string, mult?: string) => decimalToVietnamese(n) + (mult ? ` ${mult}` : "");
+  // Ranges: "300-500đ/lít", "5-10 USD" (number pairs skip these for us)
+  t = t.replace(/(?<![\d.,])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)\s*(?:đồng|VND|vnđ|đ)(?![\p{L}])/giu, (_m, a, b) => `${amount(a)} đến ${amount(b)} đồng`);
+  t = t.replace(/(?<![\d.,])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)\s*(?:USD|\$)/giu, (_m, a, b) => `${amount(a)} đến ${amount(b)} đô la`);
   // VND: 100000đồng, 100000VND, 100000đ, 1,2 tỷ đồng
   t = t.replace(/(\d+(?:,\d+)?)\s*(?:đồng|VND|vnđ)(?![\p{L}])/giu, (_m, n) => amount(n) + " đồng");
   t = t.replace(/(\d+(?:,\d+)?)đ(?![a-zà-ỹ])/gi, (_m, n) => amount(n) + " đồng");
@@ -252,7 +255,7 @@ function convertDayMonthWords(text: string): string {
 }
 
 function convertYearRanges(text: string): string {
-  return text.replace(/(\d{4})\s*[-–—]\s*(\d{4})/g, (_m, a, b) =>
+  return text.replace(/(?<![\d.,])(\d{4})\s*[-–—]\s*(\d{4})(?![\d.,]\d|\d)/g, (_m, a, b) =>
     numberToVietnamese(a) + " đến " + numberToVietnamese(b)
   );
 }
@@ -290,7 +293,7 @@ const LIST_CONNECTOR = /^\s*(?:và|,|đến|tới|hoặc|-)\s*$/i;
 
 /** Match-report vocabulary: "thắng HAGL 2-1", "Thua 0-2", "tỷ số chung cuộc 3-0". */
 const SCORE_WORDS =
-  /(?<!\p{L})(?:t[ỷỉ] số|chung cuộc|cách biệt|đánh bại|hạ gục|dẫn trước|chiến thắng|thắng(?! (?:lợi|thầu|kiện))|thua(?! (?:lỗ|kiện))|(?:cầm |gỡ )?h(?:òa|oà)(?! (?:bình|giải|hợp|nhập|thuận|vốn)))(?!\p{L})/giu;
+  /(?<!\p{L})(?:t[ỷỉ] số|chung cuộc|cách biệt|đánh bại|hạ gục|dẫn trước|vượt qua|đè bẹp|thất bại|kết thúc|chiến thắng|thắng(?! (?:lợi|thầu|kiện))|thua(?! (?:lỗ|kiện))|(?:cầm |gỡ )?h(?:òa|oà)(?! (?:bình|giải|hợp|nhập|thuận|vốn)))(?!\p{L})/giu;
 
 /**
  * Score words that double as names: "Hòa Phát", "Khánh Hòa", "Thắng",
@@ -319,12 +322,16 @@ function followedByCounter(after: string): boolean {
  * "chiến thắng 30-4" (the anniversary) stays a date.
  */
 function inScoreContext(before: string, a: string, b: string, after: string): boolean {
-  if (followedByCounter(after)) return false;
+  if (parseInt(a, 10) < parseInt(b, 10) && followedByCounter(after)) return false;
   const clause = before.split(/[,;.!?]/).pop() ?? "";
   const window = clause.trim().split(/\s+/).slice(-6).join(" ");
   for (const m of window.matchAll(SCORE_WORDS)) {
     const word = m[0];
-    if (/^chiến/i.test(word) && (parseFloat(a) >= 20 || parseFloat(b) >= 20)) continue;
+    const big = parseFloat(a) >= 20 || parseFloat(b) >= 20;
+    if (/^chiến/i.test(word) && big) continue;
+    // "thắng lớn dịp 30-4": a big date-like pair only scores right after the score word.
+    const gap = window.slice(m.index! + word.length).trim().split(/\s+/).filter(Boolean).length;
+    if (big && parseInt(b, 10) <= 12 && gap > 1) continue;
     if (/^\p{Lu}/u.test(word) && NAME_CAPABLE.test(word)) {
       const prev = window.slice(0, m.index).trimEnd().split(" ").pop() ?? "";
       const next = window.slice(m.index! + word.length).trimStart().split(" ")[0] ?? "";
@@ -367,7 +374,7 @@ function convertNumberPairs(text: string): string {
   let lastClass: PairClass | null = null;
   let lastEnd = -1;
   return text.replace(
-    /(?<![\d.,:\-–—/]|\d[hH])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)(?![\d/%]|,\d|:\d|\s*[-–—]\s*\d|\s*%|\s*(?:k|tr)(?![\p{L}\d]))/gu,
+    /(?<![\d.,:\-–—/]|\d[hH])(\d+(?:,\d+)?)\s*[-–—]\s*(\d+(?:,\d+)?)(?![\d/%]|,\d|:\d|\s*[-–—]\s*\d|\s*%|\s*(?:k|tr|đ|đồng|VNĐ|VND|vnđ|USD|\$)(?![\p{L}\d]))/gu,
     (m, a, b, offset, full) => {
       const before = full.slice(0, offset);
       const after = full.slice(offset + m.length);
